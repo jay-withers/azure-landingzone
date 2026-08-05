@@ -1,1 +1,32 @@
-Brewfile.lock.json
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files. State is local while components are applied by hand — see
+# README. Losing connectivity's state orphans the address space and DNS zones,
+# which is the argument for migrating that component to a remote backend first.
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# *.tfvars files are committed intentionally (each component's terraform.tfvars
+# holds its non-sensitive inputs). Do not put secrets in them; use Azure Key
+# Vault, GitHub Actions secrets, or ARM_* environment variables instead.
+# gitleaks (pre-commit and CI) scans every commit as a backstop.
+
+# CLI configuration and override files
+.terraformrc
+terraform.rc
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Provider lock files ARE committed, unlike in template-terraform-root — it is a
+# reusable module whose consumers generate their own locks, whereas every
+# directory here is a root config, so the locks are ours to pin.
+
+# Saved plan output
+*.tfplan
