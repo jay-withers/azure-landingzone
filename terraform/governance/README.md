@@ -35,7 +35,7 @@
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_allowed_locations"></a> [allowed\_locations](#input\_allowed\_locations) | Regions the allowed-locations policy permits. | `list(string)` | <pre>[<br/>  "uksouth",<br/>  "ukwest"<br/>]</pre> | no |
+| <a name="input_allowed_locations"></a> [allowed\_locations](#input\_allowed\_locations) | Regions the allowed-locations policy permits. | `list(string)` | <pre>[<br/>  "westeurope",<br/>  "northeurope"<br/>]</pre> | no |
 | <a name="input_budget_alert_emails"></a> [budget\_alert\_emails](#input\_budget\_alert\_emails) | Recipients for budget threshold alerts. No alert is created when empty. | `list(string)` | n/a | yes |
 | <a name="input_budget_start_date"></a> [budget\_start\_date](#input\_budget\_start\_date) | First of a month, RFC3339. Azure rejects a start date more than three months in the past. | `string` | `"2026-09-01T00:00:00Z"` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment label, used in assignment names. | `string` | `"dev"` | no |

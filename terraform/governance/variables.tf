@@ -7,7 +7,7 @@ variable "environment" {
 variable "allowed_locations" {
   type        = list(string)
   description = "Regions the allowed-locations policy permits."
-  default     = ["uksouth", "ukwest"]
+  default     = ["westeurope", "northeurope"]
 }
 
 variable "management_workload" {

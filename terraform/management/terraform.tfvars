@@ -2,7 +2,7 @@
 # from ARM_SUBSCRIPTION_ID in the environment.
 
 environment = "dev"
-location    = "uksouth"
+location    = "westeurope"
 workload    = "mgmt"
 
 log_retention_days = 30

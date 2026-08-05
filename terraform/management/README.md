@@ -33,7 +33,7 @@
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_daily_quota_gb"></a> [daily\_quota\_gb](#input\_daily\_quota\_gb) | Hard ingestion cap per day. Ingestion is billed per GB and is the least predictable cost in the subscription, so this is set rather than left unlimited — see the note in main.tf. | `number` | `1` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment label, used as the trailing element of every resource name. | `string` | `"dev"` | no |
-| <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | `"uksouth"` | no |
+| <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | `"westeurope"` | no |
 | <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | Workspace retention. 30 is the floor and is included in the per-GB price; beyond it you pay for retention separately. | `number` | `30` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags merged onto every resource. | `map(string)` | `{}` | no |
 | <a name="input_workload"></a> [workload](#input\_workload) | Names this component's resources. Other components find the workspace from this and environment, so changing it is a breaking change to every consumer. | `string` | `"mgmt"` | no |

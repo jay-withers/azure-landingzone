@@ -7,7 +7,7 @@ variable "environment" {
 variable "location" {
   type        = string
   description = "Azure region."
-  default     = "uksouth"
+  default     = "westeurope"
 }
 
 variable "workload" {
