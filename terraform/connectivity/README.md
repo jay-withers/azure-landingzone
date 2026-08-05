@@ -45,7 +45,7 @@
 | <a name="input_firewall_allowed_fqdns"></a> [firewall\_allowed\_fqdns](#input\_firewall\_allowed\_fqdns) | Destinations spokes may reach over HTTPS when the firewall is the egress path. | `list(string)` | <pre>[<br/>  "*.ubuntu.com",<br/>  "*.docker.io",<br/>  "*.ghcr.io",<br/>  "*.azurecr.io"<br/>]</pre> | no |
 | <a name="input_firewall_enabled"></a> [firewall\_enabled](#input\_firewall\_enabled) | Deploy the Azure Firewall. The policy and its rules persist when false, so flipping this back on restores the same configuration. | `bool` | `false` | no |
 | <a name="input_firewall_sku_tier"></a> [firewall\_sku\_tier](#input\_firewall\_sku\_tier) | Basic is roughly a third the hourly cost of Standard but mandates a management subnet and second public IP. | `string` | `"Basic"` | no |
-| <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | `"uksouth"` | no |
+| <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | `"westeurope"` | no |
 | <a name="input_private_dns_zones"></a> [private\_dns\_zones](#input\_private\_dns\_zones) | Private DNS zones hosted in the hub and linked to it. Spokes link themselves to these by name. | `list(string)` | <pre>[<br/>  "privatelink.vaultcore.azure.net",<br/>  "privatelink.blob.core.windows.net",<br/>  "privatelink.azurecr.io"<br/>]</pre> | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags merged onto every resource. | `map(string)` | `{}` | no |
 | <a name="input_vnet_address_space"></a> [vnet\_address\_space](#input\_vnet\_address\_space) | Hub address space. Subnet prefixes are carved from it, so it must be at least a /22. | `string` | `"10.0.0.0/22"` | no |

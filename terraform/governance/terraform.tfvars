@@ -2,7 +2,7 @@
 # from ARM_SUBSCRIPTION_ID in the environment.
 
 environment       = "dev"
-allowed_locations = ["uksouth", "ukwest"]
+allowed_locations = ["westeurope", "northeurope"]
 
 # Must match the management component's workload, or the workspace lookup in
 # data.tf will not resolve.

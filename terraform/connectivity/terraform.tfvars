@@ -2,7 +2,7 @@
 # from ARM_SUBSCRIPTION_ID in the environment.
 
 environment = "dev"
-location    = "uksouth"
+location    = "westeurope"
 workload    = "hub"
 
 vnet_address_space = "10.0.0.0/22"

@@ -2,7 +2,7 @@
 # from ARM_SUBSCRIPTION_ID in the environment.
 
 environment = "dev"
-location    = "uksouth"
+location    = "westeurope"
 
 # Must match the connectivity component's workload, or the hub lookups in data.tf
 # will not resolve.
