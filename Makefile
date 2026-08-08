@@ -25,7 +25,7 @@ BRANCH ?= main
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install protect-branch lint fmt check-component init validate plan apply destroy test validate-all cost
+.PHONY: help install protect-branch lint fmt check-component init validate plan apply destroy test validate-all cost remediate
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -79,6 +79,10 @@ validate-all: ## init + validate every component
 		terraform -chdir=$(TF_DIR)/$$c init -backend=false >/dev/null || exit 1; \
 		terraform -chdir=$(TF_DIR)/$$c validate || exit 1; \
 	done
+
+remediate: ## Sweep existing resources against a DeployIfNotExists policy (make remediate POLICY=diag-alllogs-dev)
+	@test -n "$(POLICY)" || { echo "set POLICY=<policy-assignment-name>, e.g. diag-alllogs-dev"; exit 1; }
+	./scripts/remediate-policy.sh "$(POLICY)"
 
 cost: ## What is switched on, and the hourly rate of the expensive bits
 	@printf "Toggles that bill by the hour:\n\n"

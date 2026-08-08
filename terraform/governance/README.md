@@ -1,5 +1,14 @@
 # governance
 
+## Remediation
+
+The DeployIfNotExists diagnostic-settings policy only reaches resources created
+or updated *after* it exists. Its `azurerm_subscription_policy_remediation` is
+a one-shot sweep taken at apply time — usually before the policy engine has
+finished its initial compliance evaluation, so it typically remediates 0
+resources. Run `make remediate POLICY=diag-alllogs-dev` any time you want to
+force a fresh compliance scan and sweep again (safe to re-run).
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
