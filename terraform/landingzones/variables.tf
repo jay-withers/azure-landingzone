@@ -16,6 +16,12 @@ variable "hub_workload" {
   default     = "hub"
 }
 
+variable "management_workload" {
+  type        = string
+  description = "The management component's workload name. Used to locate its Log Analytics workspace for the log_analytics_contributor grant — see the naming contract in the repo README."
+  default     = "mgmt"
+}
+
 variable "tags" {
   type        = map(string)
   description = "Additional tags merged onto every resource."
@@ -43,14 +49,22 @@ variable "landing_zones" {
                               create only its half and the peering stays Disconnected.
     - `linkable_dns_zones`  : hub zones this landing zone may link its VNet to.
                               Empty means every zone the hub hosts.
+    - `log_analytics_contributor` : grant Log Analytics Contributor on the
+                              management workspace, scoped to that workspace only.
+                              Lets the workload set its own diagnostic settings
+                              pointed at it — pointing a diagnostic setting at a
+                              workspace requires workspaces/read and
+                              workspaces/sharedKeys/action there, which nothing
+                              else this identity holds grants.
   DESCRIPTION
 
   type = map(object({
-    github_repo        = string
-    federated_subjects = optional(map(string))
-    rbac_administrator = optional(bool, false)
-    peer_to_hub        = optional(bool, true)
-    linkable_dns_zones = optional(list(string), [])
+    github_repo               = string
+    federated_subjects        = optional(map(string))
+    rbac_administrator        = optional(bool, false)
+    peer_to_hub               = optional(bool, true)
+    linkable_dns_zones        = optional(list(string), [])
+    log_analytics_contributor = optional(bool, false)
   }))
 
   default = {}

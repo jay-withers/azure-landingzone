@@ -8,6 +8,10 @@ location    = "westeurope"
 # will not resolve.
 hub_workload = "hub"
 
+# Must match the management component's workload, or the log_analytics_contributor
+# grant's workspace lookup in data.tf will not resolve.
+management_workload = "mgmt"
+
 landing_zones = {
   # The AKS cluster. rbac_administrator is on because the cluster creates its own
   # role assignments — subnet grants for its identity, and ACR pull for the kubelet.
@@ -19,6 +23,11 @@ landing_zones = {
 
     # Empty would grant every hub zone. The cluster only needs the vault zone today.
     linkable_dns_zones = ["privatelink.vaultcore.azure.net"]
+
+    # The cluster sets its own diagnostic settings against the management
+    # workspace directly, rather than governance reaching in via policy — see
+    # governance/main.diagnostics.tf for why.
+    log_analytics_contributor = true
   }
 }
 
