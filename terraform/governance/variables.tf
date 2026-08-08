@@ -10,6 +10,12 @@ variable "allowed_locations" {
   default     = ["westeurope", "northeurope"]
 }
 
+variable "location" {
+  type        = string
+  description = "Azure region for the diagnostic-settings policy assignments' managed identities. Governance is otherwise region-agnostic — this exists only because a SystemAssigned identity requires one."
+  default     = "westeurope"
+}
+
 variable "management_workload" {
   type        = string
   description = "The management component's workload name. Used to locate its Log Analytics workspace — see the naming contract in the repo README."

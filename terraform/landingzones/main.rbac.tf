@@ -80,3 +80,17 @@ resource "azurerm_role_assignment" "dns_zone_contributor" {
   principal_id         = azurerm_user_assigned_identity.lz[each.value.landing_zone].principal_id
   principal_type       = "ServicePrincipal"
 }
+
+# Scoped to the workspace itself, not the management resource group — the
+# workload only needs to reference it as a diagnostic setting destination, not
+# manage anything else management owns. Pointing a diagnostic setting at a
+# workspace requires workspaces/read and workspaces/sharedKeys/action there;
+# Log Analytics Contributor is the narrowest built-in role that includes both.
+resource "azurerm_role_assignment" "log_analytics_contributor" {
+  for_each = local.log_analytics_contributor_grants
+
+  scope                = data.azurerm_log_analytics_workspace.management.id
+  role_definition_name = "Log Analytics Contributor"
+  principal_id         = azurerm_user_assigned_identity.lz[each.key].principal_id
+  principal_type       = "ServicePrincipal"
+}

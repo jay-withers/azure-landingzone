@@ -3,6 +3,7 @@
 
 environment       = "dev"
 allowed_locations = ["westeurope", "northeurope"]
+location          = "westeurope"
 
 # Must match the management component's workload, or the workspace lookup in
 # data.tf will not resolve.

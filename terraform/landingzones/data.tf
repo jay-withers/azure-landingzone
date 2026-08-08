@@ -23,3 +23,19 @@ data "azurerm_resources" "hub_dns_zones" {
   resource_group_name = module.hub_naming.resource_group.name
   type                = "Microsoft.Network/privateDnsZones"
 }
+
+# Located the same way as governance's own lookup of this workspace — see the
+# naming contract in the repo README. Only read here to scope the
+# log_analytics_contributor grant; nothing in this component writes to it.
+module "management_naming" {
+  #checkov:skip=CKV_TF_1:Registry-sourced module pinned to a version constraint; commit-hash pinning does not apply to Terraform Registry sources.
+  source  = "Azure/naming/azurerm"
+  version = "~> 0.4"
+
+  suffix = [var.management_workload, var.environment]
+}
+
+data "azurerm_log_analytics_workspace" "management" {
+  name                = module.management_naming.log_analytics_workspace.name
+  resource_group_name = module.management_naming.resource_group.name
+}

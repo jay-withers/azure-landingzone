@@ -45,4 +45,6 @@ locals {
   peering_grants = { for key, lz in var.landing_zones : key => lz if lz.peer_to_hub }
 
   rbac_admin_grants = { for key, lz in var.landing_zones : key => lz if lz.rbac_administrator }
+
+  log_analytics_contributor_grants = { for key, lz in var.landing_zones : key => lz if lz.log_analytics_contributor }
 }
