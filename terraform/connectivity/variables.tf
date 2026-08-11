@@ -22,6 +22,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "management_workload" {
+  type        = string
+  description = "The management component's workload name. Used to locate its shared action group for the firewall alerts below — see the naming contract in the repo README."
+  default     = "mgmt"
+}
+
 variable "vnet_address_space" {
   type        = string
   description = "Hub address space. Subnet prefixes are carved from it, so it must be at least a /22."

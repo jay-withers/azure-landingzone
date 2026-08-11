@@ -14,3 +14,7 @@ monthly_budget = 150
 
 # No budget is created while this is empty.
 budget_alert_emails = ["jay.withers@appvia.io"]
+
+# Must match management's alert_emails, or the action group lookup in data.tf
+# will not resolve. No alerts are created while this is empty.
+alert_emails = ["jay.withers@appvia.io"]

@@ -12,3 +12,8 @@ output "log_analytics_workspace_id" {
   description = "Resource ID of the workspace."
   value       = azurerm_log_analytics_workspace.this.id
 }
+
+output "action_group_id" {
+  description = "Shared action group ID, or null when alert_emails is empty. Other components look this up by name via the naming module rather than reading this output — see governance/data.tf's worked example for the workspace."
+  value       = one(azurerm_monitor_action_group.this[*].id)
+}

@@ -11,9 +11,9 @@ handed to its own pipeline later without restructuring.
 
 | Component | Owns | Standing cost |
 | --------- | ---- | ------------- |
-| [`management`](terraform/management/) | Log Analytics workspace, with a daily ingestion cap | per GB ingested, capped |
-| [`governance`](terraform/governance/) | Subscription policy assignments, activity log routing, spend budget | free |
-| [`connectivity`](terraform/connectivity/) | Hub VNet, private DNS zones, spoke route table, Azure Firewall (off by default) | ~$2/month with the firewall off |
+| [`management`](terraform/management/) | Log Analytics workspace with a daily ingestion cap, shared action group, LA daily-cap alert | per GB ingested, capped |
+| [`governance`](terraform/governance/) | Subscription policy assignments, activity log routing, spend budget, Service Health + admin-failure alerts | free |
+| [`connectivity`](terraform/connectivity/) | Hub VNet, private DNS zones, spoke route table, Azure Firewall (off by default) with health/SNAT alerts | ~$2/month with the firewall off |
 | [`landingzones`](terraform/landingzones/) | A resource group per landing zone, plus the identity its pipeline authenticates as and its grants on the hub | free |
 | [`workloads/`](terraform/workloads/) | Empty. Spokes live in their own repos for now — its README is the spoke contract | — |
 
@@ -80,6 +80,15 @@ Three more things that matter more than the firewall on this budget:
 - **The budget alert.** Set `budget_alert_emails` in
   [`governance/terraform.tfvars`](terraform/governance/terraform.tfvars) — no
   budget is created while it is empty, and a budget only notifies, it never caps.
+- **The operational alerts.** Separate from the above: set `alert_emails` in
+  [`management/terraform.tfvars`](terraform/management/terraform.tfvars) to get a
+  shared action group and an alert on the Log Analytics daily cap actually being
+  hit — the most direct signal that ingestion just stopped. Set the *same*
+  `alert_emails` in `governance/terraform.tfvars` too (Service Health + failed
+  admin-operation alerts) and it's picked up automatically by `connectivity`'s
+  firewall health/SNAT alerts once `firewall_enabled=true` — no separate toggle,
+  they're destroyed along with the firewall when it's switched off. All free
+  except the firewall's two metric alerts, ~$0.10/rule/month each while it's on.
 - **There is no Bastion in this repo, on purpose.** The free Developer SKU cannot
   reach peered VNets, so it can't serve spokes from the hub — and a hub Basic
   bastion is ~$140/month. So each spoke deploys its own free Developer bastion next

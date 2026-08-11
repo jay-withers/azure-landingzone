@@ -14,3 +14,6 @@ daily_quota_gb = 1
 tags = {
   owner = "jay"
 }
+
+# No action group (and no daily-cap alert) is created while this is empty.
+alert_emails = ["jay.withers@appvia.io"]

@@ -38,3 +38,9 @@ variable "budget_alert_emails" {
   type        = list(string)
   description = "Recipients for budget threshold alerts. No alert is created when empty."
 }
+
+variable "alert_emails" {
+  type        = list(string)
+  description = "Recipients for operational alerts, routed through management's shared action group. Must match management's alert_emails — an empty list here skips these assignments even if management created the action group, and a non-empty list here with an empty one in management fails to find it. Separate from budget_alert_emails — cost and ops recipients may differ."
+  default     = []
+}
