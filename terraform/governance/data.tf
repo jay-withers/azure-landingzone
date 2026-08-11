@@ -22,3 +22,14 @@ data "azurerm_log_analytics_workspace" "management" {
   name                = module.management_naming.log_analytics_workspace.name
   resource_group_name = module.management_naming.resource_group.name
 }
+
+# Same lookup, for the shared action group management creates when its own
+# alert_emails is non-empty. Count-gated on this component's own alert_emails so
+# plan doesn't fail with "not found" for someone who hasn't opted into alerting at
+# all — see main.alerts.tf.
+data "azurerm_monitor_action_group" "management" {
+  count = length(var.alert_emails) > 0 ? 1 : 0
+
+  name                = module.management_naming.monitor_action_group.name
+  resource_group_name = module.management_naming.resource_group.name
+}

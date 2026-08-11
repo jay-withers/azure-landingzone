@@ -1,5 +1,15 @@
 # governance
 
+## Alerting
+
+Two subscription-wide activity log alerts, routed to the shared action group
+`management` creates (set `alert_emails` there first, then here — same value in
+both). Service Health covers Azure incidents/maintenance; the other is a broad
+net on failed administrative operations, not a precise "policy denial" signal —
+the activity log's `Policy` category covers changes to policy objects, not the
+resource operation a Deny effect actually blocks. That blocked operation surfaces
+under `Administrative`/`Error` instead, which is what this alerts on.
+
 ## Remediation
 
 The DeployIfNotExists diagnostic-settings policy only reaches resources created
@@ -34,6 +44,8 @@ force a fresh compliance scan and sweep again (safe to re-run).
 | Name | Type |
 | ---- | ---- |
 | [azurerm_consumption_budget_subscription.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/consumption_budget_subscription) | resource |
+| [azurerm_monitor_activity_log_alert.admin_failures](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_activity_log_alert) | resource |
+| [azurerm_monitor_activity_log_alert.service_health](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_activity_log_alert) | resource |
 | [azurerm_monitor_diagnostic_setting.activity_log](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) | resource |
 | [azurerm_role_assignment.diag_all_logs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_subscription_policy_assignment.allowed_locations](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subscription_policy_assignment) | resource |
@@ -41,12 +53,14 @@ force a fresh compliance scan and sweep again (safe to re-run).
 | [azurerm_subscription_policy_assignment.require_env_tag](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subscription_policy_assignment) | resource |
 | [azurerm_subscription_policy_remediation.diag_all_logs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subscription_policy_remediation) | resource |
 | [azurerm_log_analytics_workspace.management](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/log_analytics_workspace) | data source |
+| [azurerm_monitor_action_group.management](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/monitor_action_group) | data source |
 | [azurerm_subscription.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/subscription) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_alert_emails"></a> [alert\_emails](#input\_alert\_emails) | Recipients for operational alerts, routed through management's shared action group. Must match management's alert\_emails — an empty list here skips these assignments even if management created the action group, and a non-empty list here with an empty one in management fails to find it. Separate from budget\_alert\_emails — cost and ops recipients may differ. | `list(string)` | `[]` | no |
 | <a name="input_allowed_locations"></a> [allowed\_locations](#input\_allowed\_locations) | Regions the allowed-locations policy permits. | `list(string)` | <pre>[<br/>  "westeurope",<br/>  "northeurope"<br/>]</pre> | no |
 | <a name="input_budget_alert_emails"></a> [budget\_alert\_emails](#input\_budget\_alert\_emails) | Recipients for budget threshold alerts. No alert is created when empty. | `list(string)` | n/a | yes |
 | <a name="input_budget_start_date"></a> [budget\_start\_date](#input\_budget\_start\_date) | First of a month, RFC3339. Azure rejects a start date more than three months in the past. | `string` | `"2026-09-01T00:00:00Z"` | no |

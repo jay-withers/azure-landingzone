@@ -38,3 +38,9 @@ variable "daily_quota_gb" {
   description = "Hard ingestion cap per day. Ingestion is billed per GB and is the least predictable cost in the subscription, so this is set rather than left unlimited — see the note in main.tf."
   default     = 1
 }
+
+variable "alert_emails" {
+  type        = list(string)
+  description = "Recipients for operational alerts (service health, LA daily cap, firewall) via the shared action group this component creates. Separate from governance's budget_alert_emails — cost and ops recipients may differ. No action group is created while empty."
+  default     = []
+}
