@@ -160,10 +160,10 @@ Keep the rest in step with the template. Ecosystem-wide Renovate policy belongs 
 `template-renovate`, not here — `renovate.json` holds only `autoApprove` and the two
 regex managers for `.terraform-version` and `.tflint.hcl`.
 
-`scripts/check-tf-file-layout.sh` and `scripts/protect-branch.sh` are verbatim
-copies; if they change upstream, re-copy rather than hand-editing. One fix was
-needed in the per-component scripts: the template uses `declare -A`, which is bash
-4+ and fails on macOS's bash 3.2, so dedup is done with `sort -u` instead.
+`scripts/check-tf-file-layout.sh` is a verbatim copy; if it changes upstream,
+re-copy rather than hand-editing. One fix was needed in the per-component scripts:
+the template uses `declare -A`, which is bash 4+ and fails on macOS's bash 3.2, so
+dedup is done with `sort -u` instead.
 
 ## File layout is enforced
 
@@ -203,8 +203,8 @@ automatically with no config change.
 
 - **ci-pre-commit**: all linters on PRs to `main`, via the reusable workflow in
   `template-pipelines`. Because it is a reusable-workflow call, the status check
-  context is `pre-commit / Pre-commit`, not the bare job id — this matters for
-  `protect-branch.sh`'s `CHECKS`.
+  context is `pre-commit / Pre-commit`, not the bare job id — this matters for the
+  required status checks configured in branch protection.
 - **ci-terraform**: a `changes` job (dorny/paths-filter) gates `validate` and `plan`,
   both matrixed over components. `validate` replaces the template's `test` job — no
   `.tftest.hcl` files exist yet; add a `test` job when they do. `plan` is gated on
