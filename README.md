@@ -201,7 +201,6 @@ your `az` context.
 ```bash
 make                                 # help, and the component list
 make install                         # pre-commit hooks (once after cloning)
-make protect-branch                  # GitHub auto-merge + branch ruleset via gh
 make lint                            # all linters
 make fmt                             # terraform fmt across terraform/
 
@@ -233,7 +232,6 @@ scripts/
   check-tf-file-layout.sh
   tflint-per-component.sh
   checkov-per-component.sh
-  protect-branch.sh
 .devcontainer/
 .pre-commit-config.yaml
 .terraform-version
