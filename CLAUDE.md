@@ -160,19 +160,22 @@ Keep the rest in step with the template. Ecosystem-wide Renovate policy belongs 
 `template-renovate`, not here — `renovate.json` holds only `autoApprove` and the two
 regex managers for `.terraform-version` and `.tflint.hcl`.
 
-`scripts/check-tf-file-layout.sh` and `scripts/protect-branch.sh` are verbatim
+`scripts/check-tf-standards.sh` and `scripts/protect-branch.sh` are verbatim
 copies; if they change upstream, re-copy rather than hand-editing. One fix was
 needed in the per-component scripts: the template uses `declare -A`, which is bash
 4+ and fails on macOS's bash 3.2, so dedup is done with `sort -u` instead.
 
 ## File layout is enforced
 
-`locals`/`variable`/`output` blocks must live in a matching
-`locals.tf`/`variables.tf`/`outputs.tf` or a topic-scoped variant
-(`outputs.network.tf`), checked by `scripts/check-tf-file-layout.sh`. TFLint's
-`terraform_standard_module_structure` is deliberately left disabled in
-`terraform/.tflint.hcl` in favour of that script, which also covers locals and
-topic-scoped names. Put new blocks in the right file from the start.
+`locals`/`variable`/`output`/`data` blocks must live in a matching
+`locals.tf`/`variables.tf`/`outputs.tf`/`data.tf`, and `terraform{}`/`provider{}`
+blocks in `versions.tf` (so a component's backend goes in its `versions.tf`,
+not a separate `backend.tf`), or a topic-scoped variant of any of them
+(`outputs.network.tf`, `data.state.tf`), checked by
+`scripts/check-tf-standards.sh`. TFLint's `terraform_standard_module_structure`
+is deliberately left disabled in `terraform/.tflint.hcl` in favour of that
+script, which also covers locals/data/versions and topic-scoped names. Put new
+blocks in the right file from the start.
 
 ## Checkov skips
 

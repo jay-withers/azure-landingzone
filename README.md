@@ -15,6 +15,7 @@ handed to its own pipeline later without restructuring.
 | [`governance`](terraform/governance/) | Subscription policy assignments, activity log routing, spend budget, Service Health + admin-failure alerts | free |
 | [`connectivity`](terraform/connectivity/) | Hub VNet, private DNS zones, spoke route table, Azure Firewall (off by default) with health/SNAT alerts | ~$2/month with the firewall off |
 | [`landingzones`](terraform/landingzones/) | A resource group per landing zone, plus the identity its pipeline authenticates as and its grants on the hub | free |
+| [`bootstrap`](terraform/bootstrap/) | Identities and RBAC for the platform's Terraform state storage account — not the account itself, see below | free |
 | [`workloads/`](terraform/workloads/) | Empty. Spokes live in their own repos for now — its README is the spoke contract | — |
 
 Apply in that order:
@@ -24,6 +25,7 @@ make apply C=management
 make apply C=governance
 make apply C=connectivity
 make apply C=landingzones
+make apply C=bootstrap
 ```
 
 Nothing enforces it, and it is not arbitrary:
@@ -36,8 +38,14 @@ Nothing enforces it, and it is not arbitrary:
   resource groups with `environment`: governance assigns the built-in *Require a tag
   on resource groups* policy, whose effect is **Deny**. Remove that tag from any
   component and resource group creation across the whole subscription starts failing.
-- **`landingzones` last** — it reads `connectivity`'s hub VNet and discovers its
-  private DNS zones to grant against them.
+- **`landingzones` before `bootstrap`** — it reads `connectivity`'s hub VNet and
+  discovers its private DNS zones to grant against them, and `bootstrap` in turn looks
+  up the identity `landingzones` vends for `terraform-root-aks` (see below), which
+  fails at plan time with a "not found" if `landingzones` hasn't run yet.
+- **`bootstrap` needs `scripts/bootstrap-state.ps1` run first**, separately from
+  `terraform apply` — it only grants access to the platform state storage account, it
+  does not create the account. See [`terraform/bootstrap/README.md`](terraform/bootstrap/README.md)
+  and the script's own header comment for why.
 
 Spokes then deploy into the resource groups `landingzones` vends.
 
@@ -167,15 +175,21 @@ explicitly (e.g. `management_workload` in `governance`).
 
 ## State
 
-Local, and gitignored. That is a deliberate trade while this is applied by hand,
-but note the asymmetry: `connectivity` is now the *least* disposable component —
-losing its state file orphans the address space and the DNS zones into an import
-job, where losing a spoke's state costs nothing because you would rebuild it
-anyway.
+Local, and gitignored, for every component except `bootstrap` — that's a
+deliberate trade while the rest are applied by hand, but note the asymmetry:
+`connectivity` is now the *least* disposable component — losing its state file
+orphans the address space and the DNS zones into an import job, where losing a
+spoke's state costs nothing because you would rebuild it anyway.
 
 So when you outgrow local state, migrate `connectivity` first. The move is a
-`backend.tf` in the component directory plus `terraform init -migrate-state`, with
-no other change — which is why no backend block is committed today.
+`backend.tf` in the component directory plus `terraform init -migrate-state`,
+with no other change — `bootstrap` is the one component that already has a
+committed `backend.tf`, since it's brand new rather than migrated (nothing to
+carry over from local state) and it needs the account it grants access to
+before anything else can point at it. See
+[`terraform/bootstrap/README.md`](terraform/bootstrap/README.md) and
+`scripts/bootstrap-state.ps1` for how that account is created — deliberately
+not by Terraform.
 
 ## Prerequisites
 
@@ -187,6 +201,11 @@ where tfenv/tenv and CI can find it.
 
 - Terraform — version per `.terraform-version`
 - Azure CLI, logged in, with Owner or Contributor + User Access Administrator
+- PowerShell 7+ with the `Az.Storage` and `Az.Resources` modules, and
+  `Connect-AzAccount` run, for `scripts/bootstrap-state.ps1` — the dev
+  container image doesn't carry these yet (it's shared across repos; adding
+  them is a follow-up in `dev-containers`, not this repo), so install with
+  `Install-Module Az.Storage, Az.Resources -Scope CurrentUser` until then.
 - The target subscription exported for the provider:
 
 ```bash
@@ -227,10 +246,12 @@ terraform/
   management/            # log analytics
   connectivity/          # hub vnet, private dns, firewall
   landingzones/          # rg + federated identity + hub grants per landing zone
+  bootstrap/             # identities + RBAC for the platform state storage account
   workloads/             # spokes (empty — see its README for the spoke contract)
   modules/               # shared local modules (empty)
 scripts/
-  check-tf-file-layout.sh
+  bootstrap-state.ps1
+  check-tf-standards.sh
   tflint-per-component.sh
   checkov-per-component.sh
   protect-branch.sh
@@ -252,9 +273,16 @@ list, so it can't be planned or applied by mistake.
 
 ## Not built yet
 
-- **`bootstrap`** — the state storage account. Needed before remote state; not needed
-  while applying locally. The OIDC side is already covered by `landingzones` for
-  workload repos, but this repo's own pipeline will need its own identity.
+- **Migrating the other four components' state.** `bootstrap` proves the platform
+  state storage account works — `management`, `governance`, `connectivity` and
+  `landingzones` are still local, and stay that way until each gets its own
+  `backend.tf` + `terraform init -migrate-state` (see "State" above). `connectivity`
+  first, per that section's reasoning.
+- **`terraform-root-aks`'s own `backend.tf`.** `bootstrap` grants its existing
+  `landingzones`-vended identity access to a container for it; nothing there consumes
+  it yet.
+- **The `shared` state storage account and `github-repos`'s own consumer of it** —
+  a parallel setup in that repo, for repos that aren't part of this landing zone.
 - **Pipelines.** The intended shape is one workflow with a path-filtered matrix
   over `terraform/*`, plus a single always-running gate job as the required
   check, so the check reports even when a PR touches no Terraform.
