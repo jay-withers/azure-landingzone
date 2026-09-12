@@ -21,8 +21,14 @@ landing_zones = {
     rbac_administrator = true
     peer_to_hub        = true
 
-    # Empty would grant every hub zone. The cluster only needs the vault zone today.
-    linkable_dns_zones = ["privatelink.vaultcore.azure.net"]
+    # Empty would grant every hub zone. Two are needed: the vault zone for the
+    # workload Key Vault's private endpoint, and the blob zone for Loki's log
+    # store. Both zones are the hub's; the cluster creates only its own virtual
+    # network links to them, which is what this grant permits.
+    linkable_dns_zones = [
+      "privatelink.vaultcore.azure.net",
+      "privatelink.blob.core.windows.net",
+    ]
 
     # The cluster sets its own diagnostic settings against the management
     # workspace directly, rather than governance reaching in via policy — see

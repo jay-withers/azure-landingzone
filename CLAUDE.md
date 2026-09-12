@@ -151,7 +151,8 @@ subscription), each with its own committed `terraform.tfvars`. So:
 
 - `scripts/tflint-per-env.sh` → `scripts/tflint-per-component.sh`
 - `scripts/checkov-per-env.sh` → `scripts/checkov-per-component.sh`
-- `ci-terraform`'s matrix is over components, not `[dev, stg, prd]`
+- `ci-terraform` passes components, not `[dev, stg, prd]`, as the shared workflow's
+  `directories`
 - there is no `examples/` — components are root configs and plan directly
 - provider lock files **are** committed (the template excludes them because it is a
   reusable module; these are root configs)
@@ -160,6 +161,10 @@ Keep the rest in step with the template. Ecosystem-wide Renovate policy belongs 
 `template-renovate`, not here — `renovate.json` holds only `autoApprove` and the two
 regex managers for `.terraform-version` and `.tflint.hcl`.
 
+`scripts/check-tf-standards.sh` and `scripts/protect-branch.sh` are verbatim
+copies; if they change upstream, re-copy rather than hand-editing. One fix was
+needed in the per-component scripts: the template uses `declare -A`, which is bash
+4+ and fails on macOS's bash 3.2, so dedup is done with `sort -u` instead.
 `scripts/check-tf-file-layout.sh` is a verbatim copy; if it changes upstream,
 re-copy rather than hand-editing. One fix was needed in the per-component scripts:
 the template uses `declare -A`, which is bash 4+ and fails on macOS's bash 3.2, so
@@ -167,12 +172,15 @@ dedup is done with `sort -u` instead.
 
 ## File layout is enforced
 
-`locals`/`variable`/`output` blocks must live in a matching
-`locals.tf`/`variables.tf`/`outputs.tf` or a topic-scoped variant
-(`outputs.network.tf`), checked by `scripts/check-tf-file-layout.sh`. TFLint's
-`terraform_standard_module_structure` is deliberately left disabled in
-`terraform/.tflint.hcl` in favour of that script, which also covers locals and
-topic-scoped names. Put new blocks in the right file from the start.
+`locals`/`variable`/`output`/`data` blocks must live in a matching
+`locals.tf`/`variables.tf`/`outputs.tf`/`data.tf`, and `terraform{}`/`provider{}`
+blocks in `versions.tf` (so a component's backend goes in its `versions.tf`,
+not a separate `backend.tf`), or a topic-scoped variant of any of them
+(`outputs.network.tf`, `data.state.tf`), checked by
+`scripts/check-tf-standards.sh`. TFLint's `terraform_standard_module_structure`
+is deliberately left disabled in `terraform/.tflint.hcl` in favour of that
+script, which also covers locals/data/versions and topic-scoped names. Put new
+blocks in the right file from the start.
 
 ## Checkov skips
 
@@ -205,14 +213,22 @@ automatically with no config change.
   `template-pipelines`. Because it is a reusable-workflow call, the status check
   context is `pre-commit / Pre-commit`, not the bare job id — this matters for the
   required status checks configured in branch protection.
-- **ci-terraform**: a `changes` job (dorny/paths-filter) gates `validate` and `plan`,
-  both matrixed over components. `validate` replaces the template's `test` job — no
-  `.tftest.hcl` files exist yet; add a `test` job when they do. `plan` is gated on
-  `vars.AZURE_CLIENT_ID != ''`. The always-running `ci-terraform` gate job is the
-  check to require in branch protection.
+- **ci-terraform**: a call to the shared `terraform.yml` in `jay-withers/workflows`,
+  passing `directories` — every component, one matrix leg each. That workflow owns
+  the path filter, the `init -backend=false` + `validate` matrix and the
+  always-reporting gate job. Same reusable-workflow consequence as above: the check
+  to require in branch protection is `terraform / Terraform`, not `ci-terraform`.
+  It also takes `test-directories` for `terraform test`; pass it when `.tftest.hcl`
+  files exist here.
 - **cd-tag**: semver tag on merge to `main`.
 
-Note a real limitation of `plan` in CI: components resolve each other with data
-sources, so a plan fails until the dependency has been applied at least once —
-`governance` needs `management`, `landingzones` needs `connectivity`. `fail-fast` is
-off so each leg reports independently.
+**There is no plan in CI, deliberately.** Components are applied by hand against
+remote state. Two things make a CI plan more trouble than it is worth: it needs an
+identity with read across the subscription, which nothing currently vends —
+`bootstrap` grants its `azure-landingzone` identity only `Storage Blob Data
+Contributor` on one state container — and components resolve each other with data
+sources, so a plan fails until the dependency has been applied at least once
+(`governance` needs `management`, `landingzones` needs `connectivity`). Do not
+re-add a plan job without granting that read first; a plan job that cannot
+authenticate is worse than none, because the gate job counts *skipped* as success
+and the check goes green having planned nothing.
