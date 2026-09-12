@@ -281,9 +281,11 @@ list, so it can't be planned or applied by mistake.
   it yet.
 - **The `shared` state storage account and `github-repos`'s own consumer of it** —
   a parallel setup in that repo, for repos that aren't part of this landing zone.
-- **Pipelines.** The intended shape is one workflow with a path-filtered matrix
-  over `terraform/*`, plus a single always-running gate job as the required
-  check, so the check reports even when a PR touches no Terraform.
+- **Applies in a pipeline.** `ci-terraform` validates every component on a PR, but
+  nothing applies: components are applied by hand against remote state. A pipeline
+  apply needs an identity with read across the subscription — `bootstrap` vends this
+  repo one, but grants it only `Storage Blob Data Contributor` on its state
+  container.
 - **Wiring `terraform-root-aks` up as a spoke.** It stays in its own repo — decided
   deliberately, to keep the RBAC boundary the vended identity gives it. Two changes
   needed there: stop creating its own resource group (it looks the vended one up), and

@@ -151,7 +151,8 @@ subscription), each with its own committed `terraform.tfvars`. So:
 
 - `scripts/tflint-per-env.sh` → `scripts/tflint-per-component.sh`
 - `scripts/checkov-per-env.sh` → `scripts/checkov-per-component.sh`
-- `ci-terraform`'s matrix is over components, not `[dev, stg, prd]`
+- `ci-terraform` passes components, not `[dev, stg, prd]`, as the shared workflow's
+  `directories`
 - there is no `examples/` — components are root configs and plan directly
 - provider lock files **are** committed (the template excludes them because it is a
   reusable module; these are root configs)
@@ -212,14 +213,22 @@ automatically with no config change.
   `template-pipelines`. Because it is a reusable-workflow call, the status check
   context is `pre-commit / Pre-commit`, not the bare job id — this matters for the
   required status checks configured in branch protection.
-- **ci-terraform**: a `changes` job (dorny/paths-filter) gates `validate` and `plan`,
-  both matrixed over components. `validate` replaces the template's `test` job — no
-  `.tftest.hcl` files exist yet; add a `test` job when they do. `plan` is gated on
-  `vars.AZURE_CLIENT_ID != ''`. The always-running `ci-terraform` gate job is the
-  check to require in branch protection.
+- **ci-terraform**: a call to the shared `terraform.yml` in `jay-withers/workflows`,
+  passing `directories` — every component, one matrix leg each. That workflow owns
+  the path filter, the `init -backend=false` + `validate` matrix and the
+  always-reporting gate job. Same reusable-workflow consequence as above: the check
+  to require in branch protection is `terraform / Terraform`, not `ci-terraform`.
+  It also takes `test-directories` for `terraform test`; pass it when `.tftest.hcl`
+  files exist here.
 - **cd-tag**: semver tag on merge to `main`.
 
-Note a real limitation of `plan` in CI: components resolve each other with data
-sources, so a plan fails until the dependency has been applied at least once —
-`governance` needs `management`, `landingzones` needs `connectivity`. `fail-fast` is
-off so each leg reports independently.
+**There is no plan in CI, deliberately.** Components are applied by hand against
+remote state. Two things make a CI plan more trouble than it is worth: it needs an
+identity with read across the subscription, which nothing currently vends —
+`bootstrap` grants its `azure-landingzone` identity only `Storage Blob Data
+Contributor` on one state container — and components resolve each other with data
+sources, so a plan fails until the dependency has been applied at least once
+(`governance` needs `management`, `landingzones` needs `connectivity`). Do not
+re-add a plan job without granting that read first; a plan job that cannot
+authenticate is worse than none, because the gate job counts *skipped* as success
+and the check goes green having planned nothing.
