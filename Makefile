@@ -2,9 +2,12 @@
 # dependencies and governance reads its Log Analytics workspace. governance before
 # connectivity so the policy guardrails exist before the infrastructure that has to
 # comply with them — which is also why every component tags resource groups with
-# `environment`: governance's require-tag policy is a Deny. landingzones last, as it
-# reads connectivity's hub VNet and DNS zones.
-COMPONENTS := management governance connectivity landingzones
+# `environment`: governance's require-tag policy is a Deny. landingzones next, as it
+# reads connectivity's hub VNet and DNS zones. bootstrap last, as it looks up the
+# identity landingzones vends for the terraform-root-aks reuse case — and note it
+# needs scripts/bootstrap-state.ps1 run first, since it only grants access to the
+# state storage account, it doesn't create it (see terraform/bootstrap/README.md).
+COMPONENTS := management governance connectivity landingzones bootstrap
 
 # Component selector. Every terraform target needs it:
 #
