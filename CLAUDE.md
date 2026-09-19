@@ -157,7 +157,7 @@ subscription), each with its own committed `terraform.tfvars`. So:
   reusable module; these are root configs)
 
 Keep the rest in step with the template. Ecosystem-wide Renovate policy belongs in
-`template-renovate`, not here — `renovate.json` holds only `autoApprove` and the two
+`renovate`, not here — `renovate.json` holds only `autoApprove` and the two
 regex managers for `.terraform-version` and `.tflint.hcl`.
 
 `scripts/check-tf-file-layout.sh` is a verbatim copy; if it changes upstream,
