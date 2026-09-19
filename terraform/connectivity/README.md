@@ -32,7 +32,7 @@ action group (`management_workload` + `alert_emails` must resolve there first).
 | <a name="module_nsg_privatelink"></a> [nsg\_privatelink](#module\_nsg\_privatelink) | Azure/avm-res-network-networksecuritygroup/azurerm | ~> 0.5 |
 | <a name="module_private_dns_zones"></a> [private\_dns\_zones](#module\_private\_dns\_zones) | Azure/avm-res-network-privatednszone/azurerm | ~> 0.5 |
 | <a name="module_resource_group"></a> [resource\_group](#module\_resource\_group) | Azure/avm-res-resources-resourcegroup/azurerm | ~> 0.4 |
-| <a name="module_vnet"></a> [vnet](#module\_vnet) | Azure/avm-res-network-virtualnetwork/azurerm | ~> 0.20 |
+| <a name="module_vnet"></a> [vnet](#module\_vnet) | Azure/avm-res-network-virtualnetwork/azurerm | ~> 0.22 |
 
 ## Resources
 

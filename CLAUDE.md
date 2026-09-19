@@ -157,7 +157,7 @@ subscription), each with its own committed `terraform.tfvars`. So:
   reusable module; these are root configs)
 
 Keep the rest in step with the template. Ecosystem-wide Renovate policy belongs in
-`template-renovate`, not here — `renovate.json` holds only `autoApprove` and the two
+`renovate`, not here — `renovate.json` holds only `autoApprove` and the two
 regex managers for `.terraform-version` and `.tflint.hcl`.
 
 `scripts/check-tf-file-layout.sh` is a verbatim copy; if it changes upstream,
@@ -205,11 +205,19 @@ automatically with no config change.
   `template-pipelines`. Because it is a reusable-workflow call, the status check
   context is `pre-commit / Pre-commit`, not the bare job id — this matters for the
   required status checks configured in branch protection.
-- **ci-terraform**: a `changes` job (dorny/paths-filter) gates `validate` and `plan`,
-  both matrixed over components. `validate` replaces the template's `test` job — no
-  `.tftest.hcl` files exist yet; add a `test` job when they do. `plan` is gated on
-  `vars.AZURE_CLIENT_ID != ''`. The always-running `ci-terraform` gate job is the
-  check to require in branch protection.
+- **ci-terraform**: half shared, the same split market-agent and repo-agent use.
+  `validate` comes from the reusable workflow in `jay-withers/workflows`, matrixed
+  over the four components through its `directories` input, and reports
+  `terraform / Terraform`; that workflow also owns the path filter, whose `changed`
+  output gates the `plan` job kept here. `plan` is matrixed over components and
+  gated on `vars.AZURE_CLIENT_ID != ''`, behind its own always-reporting
+  `terraform-plan` job. Require both contexts in branch protection.
+
+  It used to run a local `changes`/`validate`/`plan` trio behind a gate job that
+  reported `ci-terraform` — while the ruleset required `terraform / Terraform`,
+  which nothing here produced. Every pull request therefore sat pending for ever
+  and could only be merged by a ruleset bypass. `validate` replaces the template's
+  `test` job — no `.tftest.hcl` files exist yet; add a `test` job when they do.
 - **cd-tag**: semver tag on merge to `main`.
 
 Note a real limitation of `plan` in CI: components resolve each other with data
