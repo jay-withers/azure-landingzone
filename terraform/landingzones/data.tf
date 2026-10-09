@@ -39,3 +39,21 @@ data "azurerm_log_analytics_workspace" "management" {
   name                = module.management_naming.log_analytics_workspace.name
   resource_group_name = module.management_naming.resource_group.name
 }
+
+# The landing zone state store bootstrap creates, located by name like the hub.
+# bootstrap seeds the naming module's unique suffix with the subscription ID
+# because storage account names are global; doing the same here reproduces the
+# exact name. Fails with "not found" until bootstrap has been applied.
+module "state_naming" {
+  #checkov:skip=CKV_TF_1:Registry-sourced module pinned to a version constraint; commit-hash pinning does not apply to Terraform Registry sources.
+  source  = "Azure/naming/azurerm"
+  version = "~> 0.4"
+
+  suffix      = [var.state_workload, var.environment]
+  unique-seed = data.azurerm_subscription.current.subscription_id
+}
+
+data "azurerm_storage_account" "state" {
+  name                = module.state_naming.storage_account.name_unique
+  resource_group_name = module.state_naming.resource_group.name
+}

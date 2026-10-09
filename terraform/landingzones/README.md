@@ -1,5 +1,17 @@
 # landingzones
 
+## State for the workload
+
+Each landing zone gets a container named after its key in bootstrap's landing zone
+state account (`stlzstatedev02d6`). Its identity holds Storage Blob Data
+Contributor on that container only, so it cannot read another landing zone's state
+or the platform's. The workload repo commits the matching entry from the
+`backend_config` output as its `backend.tf`, and sets `ARM_USE_AZUREAD=true` in its
+pipeline.
+
+Containers carry `prevent_destroy`. To retire a landing zone, destroy its workload
+first, then lift it.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -22,6 +34,7 @@
 | <a name="module_management_naming"></a> [management\_naming](#module\_management\_naming) | Azure/naming/azurerm | ~> 0.4 |
 | <a name="module_naming"></a> [naming](#module\_naming) | Azure/naming/azurerm | ~> 0.4 |
 | <a name="module_resource_group"></a> [resource\_group](#module\_resource\_group) | Azure/avm-res-resources-resourcegroup/azurerm | ~> 0.4 |
+| <a name="module_state_naming"></a> [state\_naming](#module\_state\_naming) | Azure/naming/azurerm | ~> 0.4 |
 
 ## Resources
 
@@ -33,10 +46,13 @@
 | [azurerm_role_assignment.hub_peering](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_role_assignment.log_analytics_contributor](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_role_assignment.rbac_administrator](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
+| [azurerm_role_assignment.state_blob_contributor](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_role_definition.vnet_peering](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_definition) | resource |
+| [azurerm_storage_container.lz_state](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_container) | resource |
 | [azurerm_user_assigned_identity.lz](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) | resource |
 | [azurerm_log_analytics_workspace.management](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/log_analytics_workspace) | data source |
 | [azurerm_resources.hub_dns_zones](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resources) | data source |
+| [azurerm_storage_account.state](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/storage_account) | data source |
 | [azurerm_subscription.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/subscription) | data source |
 | [azurerm_virtual_network.hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) | data source |
 
@@ -46,15 +62,17 @@
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment label, used as the trailing element of every resource name. | `string` | `"dev"` | no |
 | <a name="input_hub_workload"></a> [hub\_workload](#input\_hub\_workload) | The connectivity component's workload name. Used to locate the hub VNet and its private DNS zones — see the naming contract in the repo README. | `string` | `"hub"` | no |
-| <a name="input_landing_zones"></a> [landing\_zones](#input\_landing\_zones) | One entry per landing zone. Each gets a resource group, a user-assigned identity<br/>federated to a GitHub repository, and role assignments scoped to that resource<br/>group plus targeted grants on the hub resources it is allowed to touch.<br/><br/>The map key names the landing zone and drives its resource names.<br/><br/>- `github_repo`         : "owner/repo" the identity is federated to.<br/>- `federated_subjects`  : name => OIDC subject. Defaults to a pull\_request<br/>                          credential and a refs/heads/main credential, which is<br/>                          what a plan-on-PR / apply-on-merge pipeline needs.<br/>- `rbac_administrator`  : grant Role Based Access Control Administrator on the<br/>                          landing zone's own resource group. Needed when the<br/>                          workload creates role assignments itself — AKS does,<br/>                          for its subnet and ACR grants. Contributor cannot.<br/>- `peer_to_hub`         : grant the peering role on the hub VNet. Peering is a<br/>                          write on both sides, so without this the spoke can<br/>                          create only its half and the peering stays Disconnected.<br/>- `linkable_dns_zones`  : hub zones this landing zone may link its VNet to.<br/>                          Empty means every zone the hub hosts.<br/>- `log_analytics_contributor` : grant Log Analytics Contributor on the<br/>                          management workspace, scoped to that workspace only.<br/>                          Lets the workload set its own diagnostic settings<br/>                          pointed at it — pointing a diagnostic setting at a<br/>                          workspace requires workspaces/read and<br/>                          workspaces/sharedKeys/action there, which nothing<br/>                          else this identity holds grants. | <pre>map(object({<br/>    github_repo               = string<br/>    federated_subjects        = optional(map(string))<br/>    rbac_administrator        = optional(bool, false)<br/>    peer_to_hub               = optional(bool, true)<br/>    linkable_dns_zones        = optional(list(string), [])<br/>    log_analytics_contributor = optional(bool, false)<br/>  }))</pre> | `{}` | no |
+| <a name="input_landing_zones"></a> [landing\_zones](#input\_landing\_zones) | One entry per landing zone. Each gets a resource group, a user-assigned identity<br/>federated to a GitHub repository, and role assignments scoped to that resource<br/>group plus targeted grants on the hub resources it is allowed to touch, and a<br/>Terraform state container of its own in bootstrap's landing zone state account.<br/><br/>The map key names the landing zone and drives its resource names.<br/><br/>- `github_repo`         : "owner/repo" the identity is federated to.<br/>- `federated_subjects`  : name => OIDC subject. Defaults to a pull\_request<br/>                          credential and a refs/heads/main credential, which is<br/>                          what a plan-on-PR / apply-on-merge pipeline needs.<br/>- `rbac_administrator`  : grant Role Based Access Control Administrator on the<br/>                          landing zone's own resource group. Needed when the<br/>                          workload creates role assignments itself — AKS does,<br/>                          for its subnet and ACR grants. Contributor cannot.<br/>- `peer_to_hub`         : grant the peering role on the hub VNet. Peering is a<br/>                          write on both sides, so without this the spoke can<br/>                          create only its half and the peering stays Disconnected.<br/>- `linkable_dns_zones`  : hub zones this landing zone may link its VNet to.<br/>                          Empty means every zone the hub hosts.<br/>- `log_analytics_contributor` : grant Log Analytics Contributor on the<br/>                          management workspace, scoped to that workspace only.<br/>                          Lets the workload set its own diagnostic settings<br/>                          pointed at it — pointing a diagnostic setting at a<br/>                          workspace requires workspaces/read and<br/>                          workspaces/sharedKeys/action there, which nothing<br/>                          else this identity holds grants. | <pre>map(object({<br/>    github_repo               = string<br/>    federated_subjects        = optional(map(string))<br/>    rbac_administrator        = optional(bool, false)<br/>    peer_to_hub               = optional(bool, true)<br/>    linkable_dns_zones        = optional(list(string), [])<br/>    log_analytics_contributor = optional(bool, false)<br/>  }))</pre> | `{}` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | `"westeurope"` | no |
 | <a name="input_management_workload"></a> [management\_workload](#input\_management\_workload) | The management component's workload name. Used to locate its Log Analytics workspace for the log\_analytics\_contributor grant — see the naming contract in the repo README. | `string` | `"mgmt"` | no |
+| <a name="input_state_workload"></a> [state\_workload](#input\_state\_workload) | The workload name of bootstrap's landingzones state store (state\_stores.landingzones.workload there). Used to locate the account each landing zone's state container is vended into. | `string` | `"lzstate"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags merged onto every resource. | `map(string)` | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_backend_config"></a> [backend\_config](#output\_backend\_config) | Per workload repo, the azurerm backend block to commit. The pipeline must also set ARM\_USE\_AZUREAD=true — shared keys are disabled on the account. |
 | <a name="output_github_secrets"></a> [github\_secrets](#output\_github\_secrets) | Repository variables to set on each workload repo. None of these are secret — a client ID is useless without a federated credential matching the caller. |
 | <a name="output_hub_dns_zones_granted"></a> [hub\_dns\_zones\_granted](#output\_hub\_dns\_zones\_granted) | Which hub zones each landing zone may link its VNet to. |
 | <a name="output_landing_zones"></a> [landing\_zones](#output\_landing\_zones) | Per landing zone: the resource group its workload deploys into, and the identity its pipeline authenticates as. |

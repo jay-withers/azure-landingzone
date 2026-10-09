@@ -1,9 +1,9 @@
 # Local .terraform directories
 **/.terraform/*
 
-# .tfstate files. State is local while components are applied by hand — see
-# README. Losing connectivity's state orphans the address space and DNS zones,
-# which is the argument for migrating that component to a remote backend first.
+# .tfstate files. Every component keeps state in the azurerm backend except
+# bootstrap, which creates that backend and so keeps its own locally — see README.
+# Never commit it; it is recoverable by import, not by git.
 *.tfstate
 *.tfstate.*
 
