@@ -1,10 +1,11 @@
-# Apply order, and nothing enforces it. management first because it has no
+# Apply order, and nothing enforces it. bootstrap first: it holds everyone else's
+# state, and keeps its own locally. management next because it has no other
 # dependencies and governance reads its Log Analytics workspace. governance before
 # connectivity so the policy guardrails exist before the infrastructure that has to
 # comply with them — which is also why every component tags resource groups with
 # `environment`: governance's require-tag policy is a Deny. landingzones last, as it
 # reads connectivity's hub VNet and DNS zones.
-COMPONENTS := management governance connectivity landingzones
+COMPONENTS := bootstrap management governance connectivity landingzones
 
 # Component selector. Every terraform target needs it:
 #

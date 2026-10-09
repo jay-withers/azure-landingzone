@@ -13,7 +13,7 @@ independently.
 
 `terraform/<component>/` is a root module — `.tf` files directly in the directory,
 with a committed `terraform.tfvars` that Terraform loads automatically. Components:
-`governance`, `management`, `connectivity`, `landingzones`, and `workloads/<name>`
+`bootstrap`, `governance`, `management`, `connectivity`, `landingzones`, and `workloads/<name>`
 for spokes. Shared local modules live in `terraform/modules/`, which is *not* a
 component — the Makefile validates `C=` against the `COMPONENTS` list so it can't be
 planned or applied.
@@ -22,8 +22,10 @@ planned or applied.
 every other repo of Jay's and the template's own tooling globs (`terraform/**` in
 paths-filter, `terraform/.tflint.hcl`, `TF_DIR`).
 
-Apply order is `management → governance → connectivity → landingzones → workloads/*`,
-and nothing enforces it. `management` is first because it has no dependencies and
+Apply order is `bootstrap → management → governance → connectivity → landingzones →
+workloads/*`, and nothing enforces it. `bootstrap` is first because every other
+component's backend points at the storage account it creates. `management` is next
+because it has no other dependencies and
 `governance` reads its Log Analytics workspace. `governance` precedes `connectivity`
 so policy guardrails exist before the infrastructure that must comply.
 `landingzones` reads `connectivity`'s hub, and spokes deploy into the resource groups
@@ -58,7 +60,9 @@ GitHub repo alongside it. Consequences to preserve:
   cannot. Chosen over `User Access Administrator` because it cannot assign Owner or
   UAA, so the boundary can't be escaped.
 - Set `principal_type = "ServicePrincipal"` on every role assignment — without it
-  azurerm does an Entra lookup that fails intermittently on a fresh identity.
+  azurerm does an Entra lookup that fails intermittently on a fresh identity. The
+  one exception is `bootstrap`'s `state_stores.*.blob_contributors`, which include people,
+  so `principal_type` comes from the input there — but it is still always set.
 
 ## The cost constraint is a design constraint
 
@@ -103,13 +107,44 @@ consumers declare the producer's workload explicitly (`management_workload` in
 
 ## State
 
-Local and gitignored; no backend block is committed, which is what makes the
-eventual move a `backend.tf` plus `init -migrate-state` and nothing else. Do not
-add an empty `backend "azurerm" {}` — it would force `-backend-config` on every
-local run for no present benefit.
+Remote, in the `azurerm` backend, except `bootstrap`. Each component's
+`backend.tf` holds literal values (`rg-tfstate-dev` / `sttfstatedev02d6` /
+`tfstate` / `<component>.tfstate`, `use_azuread_auth = true`), because backend
+blocks cannot take variables. A new component copies one and changes `key`.
 
-`connectivity` is the least disposable component and should migrate to remote state
-first: losing its state orphans the address space and DNS zones.
+`bootstrap` creates two state accounts: `platform` (this repo's components) and
+`landingzones` (workload state, in a separate account so no grant on it can reach
+platform state). `landingzones` vends one container per landing zone there and grants
+the vended identity Storage Blob Data Contributor **scoped to that container**. Never
+widen that grant to the account: it would let one workload read and lock another's
+state. Workload backends omit `resource_group_name`, because with Entra auth the
+backend never touches ARM.
+
+`bootstrap` keeps its **own state local**, by
+decision: self-hosting would let a bootstrap destroy delete its own state. Do not
+add a `backend.tf` to it. Its names are deterministic — the naming module's
+`unique-seed` is the subscription ID — so lost state means `terraform import`, and
+`landingzones` reproduces the account name with the same seed. Keep the seed: a
+random suffix would make the backend literals unrecoverable and break that lookup.
+
+The account is Entra-only (`shared_access_key_enabled = false`). Consequences:
+
+- Access to state is Storage Blob Data Contributor via bootstrap's
+  `state_stores.<store>.blob_contributors`. Subscription Owner is not enough. Never "fix" a backend
+  403 by re-enabling shared keys — add the principal instead.
+- `bootstrap`'s provider sets `storage_use_azuread = true`. After creating an
+  account azurerm polls its blob endpoint, with a key by default, and the apply
+  fails with `KeyBasedAuthenticationNotPermitted`.
+- `azurerm_storage_container` uses `storage_account_id`, not
+  `storage_account_name`, so it is created through ARM rather than the data plane,
+  which a key-less account would refuse.
+- The `CanNotDelete` locks and `prevent_destroy` (accounts and every container,
+  including the vended ones) are deliberate. Do not remove them to make a destroy
+  work. Removing a landing zone fails at plan until its container's
+  `prevent_destroy` is lifted, and the workload has to be destroyed first.
+
+`make validate-all` and the shared CI `validate` init with `-backend=false`, so they
+need no credentials.
 
 ## Module choices
 

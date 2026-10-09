@@ -11,15 +11,17 @@ handed to its own pipeline later without restructuring.
 
 | Component | Owns | Standing cost |
 | --------- | ---- | ------------- |
+| [`bootstrap`](terraform/bootstrap/) | Two state storage accounts, platform and landing zone (Entra-only, versioned, delete-locked). Its own state is local | cents/month |
 | [`management`](terraform/management/) | Log Analytics workspace with a daily ingestion cap, shared action group, LA daily-cap alert | per GB ingested, capped |
 | [`governance`](terraform/governance/) | Subscription policy assignments, activity log routing, spend budget, Service Health + admin-failure alerts | free |
 | [`connectivity`](terraform/connectivity/) | Hub VNet, private DNS zones, spoke route table, Azure Firewall (off by default) with health/SNAT alerts | ~$2/month with the firewall off |
-| [`landingzones`](terraform/landingzones/) | A resource group per landing zone, plus the identity its pipeline authenticates as and its grants on the hub | free |
+| [`landingzones`](terraform/landingzones/) | A resource group per landing zone, plus the identity its pipeline authenticates as, its grants on the hub, and its own state container | free |
 | [`workloads/`](terraform/workloads/) | Empty. Spokes live in their own repos for now — its README is the spoke contract | — |
 
 Apply in that order:
 
 ```bash
+make apply C=bootstrap
 make apply C=management
 make apply C=governance
 make apply C=connectivity
@@ -28,7 +30,9 @@ make apply C=landingzones
 
 Nothing enforces it, and it is not arbitrary:
 
-- **`management` first** — it has no dependencies, and `governance` reads its Log
+- **`bootstrap` first** — every other component's `backend.tf` points at the
+  storage account it creates, so none of them can even `init` until it exists.
+- **`management` next** — it has no other dependencies, and `governance` reads its Log
   Analytics workspace to route activity logs. Applying `governance` first fails at
   plan time with a "not found".
 - **`governance` before `connectivity`** so the policy guardrails exist before the
@@ -37,7 +41,8 @@ Nothing enforces it, and it is not arbitrary:
   on resource groups* policy, whose effect is **Deny**. Remove that tag from any
   component and resource group creation across the whole subscription starts failing.
 - **`landingzones` last** — it reads `connectivity`'s hub VNet and discovers its
-  private DNS zones to grant against them.
+  private DNS zones to grant against them. It also looks up bootstrap's landing
+  zone state account to vend each landing zone's state container.
 
 Spokes then deploy into the resource groups `landingzones` vends.
 
@@ -167,15 +172,62 @@ explicitly (e.g. `management_workload` in `governance`).
 
 ## State
 
-Local, and gitignored. That is a deliberate trade while this is applied by hand,
-but note the asymmetry: `connectivity` is now the *least* disposable component —
-losing its state file orphans the address space and the DNS zones into an import
-job, where losing a spoke's state costs nothing because you would rebuild it
-anyway.
+Remote, in `azurerm` backends, across two storage accounts that `bootstrap` creates:
 
-So when you outgrow local state, migrate `connectivity` first. The move is a
-`backend.tf` in the component directory plus `terraform init -migrate-state`, with
-no other change — which is why no backend block is committed today.
+| Store | Account | Holds | Who can write |
+| ----- | ------- | ----- | ------------- |
+| platform | `sttfstatedev02d6` in `rg-tfstate-dev` | container `tfstate`, one `<component>.tfstate` per component here | `state_stores.platform.blob_contributors` |
+| landingzones | `stlzstatedev02d6` in `rg-lzstate-dev` | one container per landing zone, named after its key | that landing zone's identity, scoped to its container, plus break-glass admins |
+
+Each component's `backend.tf` holds the platform literals, because backend blocks
+cannot take variables. Workload state sits in a separate account so no grant on it,
+at any scope, can reach platform state. `landingzones` vends each container next to
+the landing zone's resource group and identity, and grants Storage Blob Data
+Contributor on **that container only**, so one workload cannot read or lock
+another's state. A workload repo takes its backend block from the `backend_config`
+output and sets `ARM_USE_AZUREAD=true` in its pipeline. It needs no
+`resource_group_name`, since with Entra auth the backend talks to the blob endpoint
+directly.
+
+**`bootstrap` keeps its own state locally**, and gitignored. It creates the account,
+so storing its state there would let a bootstrap destroy delete the state it is
+running from. That is cheap to accept: the account name is seeded from the
+subscription ID rather than drawn at random, so every name bootstrap produces is
+deterministic and lost state is a few `terraform import`s.
+
+What protects the account:
+
+- **Entra-only auth.** Shared keys are disabled and every backend sets
+  `use_azuread_auth`. Owner on the subscription grants no blob data access, so
+  readers and writers are listed in bootstrap's `state_stores.<store>.blob_contributors`,
+  which assigns Storage Blob Data Contributor. A `403` on `init` means you are missing
+  from that list.
+- **Versioning plus 30-day soft delete** on blobs and containers. Every write keeps
+  the previous version, so a bad state write is recovered by promoting an earlier
+  version in the portal or with `az storage blob copy`.
+- **A `CanNotDelete` lock** and `prevent_destroy` on both accounts, and
+  `prevent_destroy` on every container. Removing one has to be a deliberate
+  two-step change. Retiring a landing zone means destroying its workload first, then
+  lifting `prevent_destroy` on its container.
+
+State locking is a blob lease. If a crashed run leaves one behind:
+
+```bash
+az storage blob lease break --auth-mode login \
+  --account-name sttfstatedev02d6 --container-name tfstate --blob-name <component>.tfstate
+```
+
+### Migrating local state
+
+Run this once per component that still has a local `terraform.tfstate`, in apply
+order, after `make apply C=bootstrap`:
+
+```bash
+cp terraform/<component>/terraform.tfstate ~/tfstate-backup-<component>.json
+terraform -chdir=terraform/<component> init -migrate-state   # answer yes
+make plan C=<component>                                       # must show no changes
+rm terraform/<component>/terraform.tfstate*
+```
 
 ## Prerequisites
 
@@ -222,6 +274,7 @@ make apply C=connectivity TFARGS='-var firewall_enabled=true -var firewall_sku_t
 ```text
 terraform/
   .tflint.hcl            # shared by every component
+  bootstrap/             # remote state storage accounts (local state)
   governance/            # subscription policy, activity logs, budget
   management/            # log analytics
   connectivity/          # hub vnet, private dns, firewall
@@ -250,9 +303,10 @@ list, so it can't be planned or applied by mistake.
 
 ## Not built yet
 
-- **`bootstrap`** — the state storage account. Needed before remote state; not needed
-  while applying locally. The OIDC side is already covered by `landingzones` for
-  workload repos, but this repo's own pipeline will need its own identity.
+- **This repo's own pipeline identity.** The OIDC side is covered by `landingzones`
+  for workload repos, but this repo needs its own. When it exists, add it to
+  bootstrap's `state_stores.platform.blob_contributors` as a `ServicePrincipal` so `plan` can read
+  and lock state.
 - **Pipelines.** The intended shape is one workflow with a path-filtered matrix
   over `terraform/*`, plus a single always-running gate job as the required
   check, so the check reports even when a PR touches no Terraform.

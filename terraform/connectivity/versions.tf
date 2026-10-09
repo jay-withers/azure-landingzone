@@ -12,9 +12,6 @@ terraform {
       version = "~> 2.0"
     }
   }
-
-  # No backend block: state is local while this is applied by hand. Adding a
-  # backend.tf here plus `init -migrate-state` is the whole move to remote state.
 }
 
 provider "azurerm" {

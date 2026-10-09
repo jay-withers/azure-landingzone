@@ -28,7 +28,7 @@ jobs:
     uses: jay-withers/workflows/.github/workflows/terraform.yml@6599cdd2b3f2870119a2de439360471b2b94765e # v1.4.11
     with:
       directories: >-
-        ["terraform/management", "terraform/governance",
+        ["terraform/bootstrap", "terraform/management", "terraform/governance",
         "terraform/connectivity", "terraform/landingzones"]
 
   # Plans each component against Azure using GitHub OIDC. Skipped until the
@@ -41,8 +41,8 @@ jobs:
   # a resource that does not exist yet fails at plan time — so `governance`
   # fails until `management` is applied, and `landingzones` fails until
   # `connectivity` is. fail-fast is off so each leg reports independently rather
-  # than one missing dependency masking the rest. Apply order is management →
-  # governance → connectivity → landingzones.
+  # than one missing dependency masking the rest. Apply order is bootstrap →
+  # management → governance → connectivity → landingzones.
   #
   # The `changed` output reuses the shared workflow's path filter rather than
   # declaring a second dorny/paths-filter here that would drift from it. The
@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [management, governance, connectivity, landingzones]
+        component: [bootstrap, management, governance, connectivity, landingzones]
     permissions:
       id-token: write
       contents: read
@@ -67,6 +67,9 @@ jobs:
       ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      # The state account has shared keys disabled; the backend authenticates
+      # with the same OIDC token as the provider.
+      ARM_USE_AZUREAD: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -81,9 +84,11 @@ jobs:
           terraform_version: ${{ steps.tfversion.outputs.version }}
           terraform_wrapper: false
 
-      # No backend block is committed, so state is local to the runner and this
-      # plan is throwaway — it proves the config resolves against real Azure, not
-      # what a real apply would change. Point this at a backend once one exists.
+      # Every component except bootstrap inits against the remote backend, so this
+      # plans against real state. The CI identity needs Storage Blob Data
+      # Contributor on the state account (bootstrap's state_stores.platform.blob_contributors) —
+      # plan takes a blob lease to lock. bootstrap keeps local state, so its leg
+      # plans against empty state and shows everything as a create.
       - name: Terraform init
         run: terraform init -input=false
 

@@ -22,6 +22,12 @@ variable "management_workload" {
   default     = "mgmt"
 }
 
+variable "state_workload" {
+  type        = string
+  description = "The workload name of bootstrap's landingzones state store (state_stores.landingzones.workload there). Used to locate the account each landing zone's state container is vended into."
+  default     = "lzstate"
+}
+
 variable "tags" {
   type        = map(string)
   description = "Additional tags merged onto every resource."
@@ -32,7 +38,8 @@ variable "landing_zones" {
   description = <<-DESCRIPTION
     One entry per landing zone. Each gets a resource group, a user-assigned identity
     federated to a GitHub repository, and role assignments scoped to that resource
-    group plus targeted grants on the hub resources it is allowed to touch.
+    group plus targeted grants on the hub resources it is allowed to touch, and a
+    Terraform state container of its own in bootstrap's landing zone state account.
 
     The map key names the landing zone and drives its resource names.
 
@@ -68,6 +75,13 @@ variable "landing_zones" {
   }))
 
   default = {}
+
+  # The key also names the landing zone's state container, which is the stricter
+  # of the two constraints.
+  validation {
+    condition     = alltrue([for key in keys(var.landing_zones) : can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", key)) && !strcontains(key, "--")])
+    error_message = "Landing zone keys must be 3-63 lowercase letters, digits and single hyphens — they name the state container."
+  }
 
   validation {
     condition     = alltrue([for lz in var.landing_zones : can(regex("^[^/]+/[^/]+$", lz.github_repo))])
