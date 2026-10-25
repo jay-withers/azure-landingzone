@@ -17,7 +17,7 @@ state_stores = {
     workload = "tfstate"
     blob_contributors = [
       {
-        object_id      = "b168eef0-d213-406e-a7f9-7b9198d580da" # jay.withers@appvia.io
+        object_id      = "b168eef0-d213-406e-a7f9-7b9198d580da" # Jay Withers (Entra user)
         principal_type = "User"
       },
     ]
@@ -29,7 +29,7 @@ state_stores = {
     workload = "lzstate"
     blob_contributors = [
       {
-        object_id      = "b168eef0-d213-406e-a7f9-7b9198d580da" # jay.withers@appvia.io
+        object_id      = "b168eef0-d213-406e-a7f9-7b9198d580da" # Jay Withers (Entra user)
         principal_type = "User"
       },
     ]
