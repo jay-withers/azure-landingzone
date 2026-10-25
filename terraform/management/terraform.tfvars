@@ -16,4 +16,4 @@ tags = {
 }
 
 # No action group (and no daily-cap alert) is created while this is empty.
-alert_emails = ["jay.withers@appvia.io"]
+alert_emails = ["withersj888@outlook.com"]
