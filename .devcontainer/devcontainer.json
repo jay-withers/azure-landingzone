@@ -1,6 +1,6 @@
 {
   "name": "terraform",
-  "image": "ghcr.io/jay-withers/dev-containers/terraform:v0.16.15@sha256:48b0bca9c7f475d238b888d9a30b0afe56eb683c16af925778c01576810619d5",
+  "image": "ghcr.io/jay-withers/dev-containers/terraform:v0.17.1@sha256:7570e1f309b3b3c522936a7ed6d65b2f6664f2182bf63e9e35e5a1a51d078289",
   "mounts": [
     // The same source works on every host: Docker Desktop (macOS, Windows)
     // resolves it inside its own VM. docker-socket-setup handles the ownership
