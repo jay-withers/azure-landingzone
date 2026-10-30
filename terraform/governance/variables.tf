@@ -44,3 +44,21 @@ variable "alert_emails" {
   description = "Recipients for operational alerts, routed through management's shared action group. Must match management's alert_emails — an empty list here skips these assignments even if management created the action group, and a non-empty list here with an empty one in management fails to find it. Separate from budget_alert_emails — cost and ops recipients may differ."
   default     = []
 }
+
+variable "github_repos_apply" {
+  type = object({
+    subject              = string
+    resource_group_name  = optional(string, "rg-tfstate-shared")
+    storage_account_name = optional(string, "sttfsharedjw")
+    container_name       = optional(string, "github-repos")
+  })
+  description = <<-DESCRIPTION
+    The identity jay-withers/github-repos applies with from CI (main.github-repos.tf).
+
+    `subject` is the OIDC subject of that repo's `apply` GitHub environment, in
+    GitHub's immutable form: repo:<owner>@<owner id>/<repo>@<repo id>:environment:apply.
+    The readable repo:<owner>/<repo> form never matches its tokens (AADSTS700213).
+    The rest locate github-repos' state container in the "shared" account, and the
+    resource group the identity lives in beside every other uai-<repo>-deploy-dev.
+  DESCRIPTION
+}
