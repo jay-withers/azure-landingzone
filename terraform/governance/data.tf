@@ -33,3 +33,20 @@ data "azurerm_monitor_action_group" "management" {
   name                = module.management_naming.monitor_action_group.name
   resource_group_name = module.management_naming.resource_group.name
 }
+
+# github-repos' state lives in the "shared" account its own bootstrap script
+# creates (rg-tfstate-shared / sttfsharedjw), not in bootstrap's stores here.
+# Looked up so the apply identity can be granted that one container.
+data "azurerm_resource_group" "github_repos_state" {
+  name = var.github_repos_apply.resource_group_name
+}
+
+data "azurerm_storage_account" "github_repos_state" {
+  name                = var.github_repos_apply.storage_account_name
+  resource_group_name = data.azurerm_resource_group.github_repos_state.name
+}
+
+data "azurerm_storage_container" "github_repos_state" {
+  name               = var.github_repos_apply.container_name
+  storage_account_id = data.azurerm_storage_account.github_repos_state.id
+}
