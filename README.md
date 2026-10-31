@@ -303,13 +303,6 @@ list, so it can't be planned or applied by mistake.
 
 ## Not built yet
 
-- **This repo's own pipeline identity.** The OIDC side is covered by `landingzones`
-  for workload repos, but this repo needs its own. When it exists, add it to
-  bootstrap's `state_stores.platform.blob_contributors` as a `ServicePrincipal` so `plan` can read
-  and lock state.
-- **Pipelines.** The intended shape is one workflow with a path-filtered matrix
-  over `terraform/*`, plus a single always-running gate job as the required
-  check, so the check reports even when a PR touches no Terraform.
 - **Wiring `terraform-root-aks` up as a spoke.** It stays in its own repo — decided
   deliberately, to keep the RBAC boundary the vended identity gives it. Two changes
   needed there: stop creating its own resource group (it looks the vended one up), and
