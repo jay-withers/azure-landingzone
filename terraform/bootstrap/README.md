@@ -46,10 +46,14 @@ the other components must be in `state_stores.platform.blob_contributors`. See t
 
 | Name | Type |
 | ---- | ---- |
+| [azurerm_federated_identity_credential.pipeline](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/federated_identity_credential) | resource |
 | [azurerm_management_lock.state](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) | resource |
+| [azurerm_role_assignment.pipeline](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
+| [azurerm_role_assignment.pipeline_state](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_role_assignment.state_blob_contributor](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) | resource |
 | [azurerm_storage_account.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) | resource |
 | [azurerm_storage_container.tfstate](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_container) | resource |
+| [azurerm_user_assigned_identity.pipeline](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) | resource |
 | [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) | data source |
 
 ## Inputs
@@ -58,6 +62,7 @@ the other components must be in `state_stores.platform.blob_contributors`. See t
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment label, used as the trailing element of every resource name. | `string` | `"dev"` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | `"westeurope"` | no |
+| <a name="input_pipeline_identity"></a> [pipeline\_identity](#input\_pipeline\_identity) | This repo's CI apply identity (main.pipeline.tf). `subject` is the OIDC<br/>subject of the `apply` GitHub environment, in the immutable form the repo<br/>issues: `repo:jay-withers@<owner id>/azure-landingzone@<repo id>:environment:apply`. | <pre>object({<br/>    subject = string<br/>  })</pre> | n/a | yes |
 | <a name="input_state_stores"></a> [state\_stores](#input\_state\_stores) | One resource group and storage account per entry. Two keys are required:<br/><br/>- `platform`     : state for this repo's components. Gets a `tfstate` container;<br/>                   every component's backend.tf points here.<br/>- `landingzones` : state for workloads deployed into vended landing zones. Holds<br/>                   no containers of its own — the landingzones component vends<br/>                   one per landing zone, with a grant scoped to that container.<br/><br/>`workload` names the resource group and account, and is hardcoded in backends<br/>(platform) or looked up by name (landingzones), so changing it means<br/>re-migrating state. `blob_contributors` get Storage Blob Data Contributor on the<br/>whole account — admins and the platform pipeline, not workload identities. It is<br/>needed even with Owner on the subscription: shared keys are disabled, and Owner<br/>grants no blob data access. principal\_type is User for a person,<br/>ServicePrincipal for a pipeline identity. | <pre>map(object({<br/>    workload = string<br/>    blob_contributors = optional(list(object({<br/>      object_id      = string<br/>      principal_type = string<br/>    })), [])<br/>  }))</pre> | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags merged onto every resource. | `map(string)` | `{}` | no |
 
@@ -65,6 +70,7 @@ the other components must be in `state_stores.platform.blob_contributors`. See t
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_pipeline_identity"></a> [pipeline\_identity](#output\_pipeline\_identity) | This repo's CI apply identity. github-repos looks it up by name and sets AZURE\_CLIENT\_ID on the `apply` environment. |
 | <a name="output_platform_container_name"></a> [platform\_container\_name](#output\_platform\_container\_name) | Container in the platform store holding one <component>.tfstate blob per component. |
 | <a name="output_state_stores"></a> [state\_stores](#output\_state\_stores) | Resource group and storage account per state store. The platform values are hardcoded in every component's backend.tf — backend blocks cannot take variables. landingzones looks its store up by name. |
 <!-- END_TF_DOCS -->

@@ -10,9 +10,8 @@ tags = {
 
 # Object IDs are not secrets.
 state_stores = {
-  # Add this repo's CI identity here, as ServicePrincipal, once the AZURE_CLIENT_ID
-  # repository variable is set — ci-terraform's plan job takes a blob lease to lock
-  # state, so it needs Contributor, not Reader.
+  # This repo's CI identity is granted on the tfstate container in
+  # main.pipeline.tf, not here.
   platform = {
     workload = "tfstate"
     blob_contributors = [
@@ -34,4 +33,11 @@ state_stores = {
       },
     ]
   }
+}
+
+# The CI apply identity's federated subject. Owner and repo IDs from
+# `gh api repos/jay-withers/azure-landingzone --jq '{id, owner: .owner.id}'`;
+# the environment is the one github-repos restricts to main.
+pipeline_identity = {
+  subject = "repo:jay-withers@288264678/azure-landingzone@1324447022:environment:apply"
 }

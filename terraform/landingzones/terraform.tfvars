@@ -21,6 +21,16 @@ landing_zones = {
     rbac_administrator = true
     peer_to_hub        = true
 
+    # The defaults plus `dev`, the GitHub environment the shared
+    # terraform-deploy.yml runs cd-terraform and the drift check in. `main`
+    # stays for cd-dev-power, which runs outside any environment. The repo
+    # issues readable subjects, not the immutable form.
+    federated_subjects = {
+      "pull-request"    = "repo:jay-withers/terraform-root-aks:pull_request"
+      "main"            = "repo:jay-withers/terraform-root-aks:ref:refs/heads/main"
+      "environment-dev" = "repo:jay-withers/terraform-root-aks:environment:dev"
+    }
+
     # Empty would grant every hub zone. The cluster only needs the vault zone today.
     linkable_dns_zones = ["privatelink.vaultcore.azure.net"]
 

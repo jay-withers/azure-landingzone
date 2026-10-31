@@ -56,3 +56,14 @@ variable "state_stores" {
     error_message = "principal_type must be one of User, Group, ServicePrincipal."
   }
 }
+
+variable "pipeline_identity" {
+  type = object({
+    subject = string
+  })
+  description = <<-DESCRIPTION
+    This repo's CI apply identity (main.pipeline.tf). `subject` is the OIDC
+    subject of the `apply` GitHub environment, in the immutable form the repo
+    issues: `repo:jay-withers@<owner id>/azure-landingzone@<repo id>:environment:apply`.
+  DESCRIPTION
+}

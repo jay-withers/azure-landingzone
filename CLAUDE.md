@@ -71,6 +71,12 @@ including a subscription-scope custom role. It is granted here so github-repos c
 change its own rights, and federated only to that repo's `main`-only `apply`
 environment. Don't copy it for anything else.
 
+**And its twin: this repo's own apply identity** (`bootstrap`'s `main.pipeline.tf`,
+`uai-azure-landingzone-apply-dev`). Same rights, same main-only `apply` environment,
+for cd-terraform over every component except `bootstrap`. It lives in `bootstrap`
+because that component is never applied from CI, so no pipeline apply can remove
+or re-scope the identity it runs as.
+
 ## The cost constraint is a design constraint
 
 $150/month is about $0.20/hour for everything. Treat any hourly-billed resource as
