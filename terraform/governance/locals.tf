@@ -45,12 +45,4 @@ locals {
       effect       = "Audit"
     }
   }
-
-  # Microsoft Graph and its delegated User.Read scope: the one permission an
-  # EasyAuth sign-in needs to read the signed-in user's profile.
-  graph_app_id       = "00000003-0000-0000-c000-000000000000"
-  graph_user_read_id = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"
-  # The default access app role every service principal has. Assigning it is
-  # what lets a user sign in once app_role_assignment_required is on.
-  default_access_role_id = "00000000-0000-0000-0000-000000000000"
 }
