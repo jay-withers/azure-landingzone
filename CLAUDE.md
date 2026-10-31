@@ -252,7 +252,7 @@ automatically with no config change.
 ## CI
 
 - **ci-pre-commit**: all linters on PRs to `main`, via the reusable workflow in
-  `template-pipelines`. Because it is a reusable-workflow call, the status check
+  `workflows`. Because it is a reusable-workflow call, the status check
   context is `pre-commit / Pre-commit`, not the bare job id — this matters for the
   required status checks configured in branch protection.
 - **ci-terraform**: the shared credential-free validate, matrixed over every
