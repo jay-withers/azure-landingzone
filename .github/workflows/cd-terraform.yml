@@ -1,0 +1,99 @@
+name: cd-terraform
+
+# Plans every component except bootstrap on each merge to main that touches
+# Terraform, through the shared terraform-deploy.yml, and applies only when run
+# by hand (Actions -> Run workflow), like every other Terraform repo. A plan
+# with changes opens a `terraform-pending` issue per component; the manual run
+# applies exactly the plans it prints and closes them.
+#
+# Runs in the `apply` GitHub environment, which only main can deploy to. It
+# holds AZURE_CLIENT_ID for uai-azure-landingzone-apply-dev (Contributor + User
+# Access Administrator on the subscription), which bootstrap creates and
+# grants. bootstrap itself is never here: its state is local, and it is
+# applied by hand (`make apply C=bootstrap`). `environment: dev` names the
+# issues; environment-files is off because each component's backend block and
+# terraform.tfvars are complete on their own.
+#
+# One job per component, chained in apply order. On a push every component
+# plans whatever happened before it. On a manual run each applies only after
+# the one before succeeded, because governance reads management's workspace and
+# landingzones connectivity's hub.
+#
+# The firewall: `make apply C=connectivity TFARGS='-var firewall_enabled=true'`
+# locally switches it on for a session. Until it is off again the nightly drift
+# check reports connectivity as drifted, and the next manual run here turns it
+# off.
+#
+# No `secrets: inherit`: no component reads a secret.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - "!terraform/bootstrap/**"
+      - ".terraform-version"
+      - ".github/workflows/cd-terraform.yml"
+  # The manual apply: also re-runs a failed apply, or corrects drift.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  management:
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # terraform-pending and deploy-failed issues
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/management
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      apply: ${{ github.event_name == 'workflow_dispatch' }}
+
+  governance:
+    needs: management
+    if: always() && (github.event_name == 'push' || needs.management.result == 'success')
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # terraform-pending and deploy-failed issues
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/governance
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      apply: ${{ github.event_name == 'workflow_dispatch' }}
+
+  connectivity:
+    needs: governance
+    if: always() && (github.event_name == 'push' || needs.governance.result == 'success')
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # terraform-pending and deploy-failed issues
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/connectivity
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      apply: ${{ github.event_name == 'workflow_dispatch' }}
+
+  landingzones:
+    needs: connectivity
+    if: always() && (github.event_name == 'push' || needs.connectivity.result == 'success')
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # terraform-pending and deploy-failed issues
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/landingzones
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      apply: ${{ github.event_name == 'workflow_dispatch' }}

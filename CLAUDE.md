@@ -172,7 +172,9 @@ not `resource_group_name`, and each `virtual_network_links` entry needs an expli
 
 ## Commands
 
-Every terraform target needs a component:
+Applies normally go through cd-terraform (see CI below); these are for
+`bootstrap`, local plans and break-glass. Every terraform target needs a
+component:
 
 ```bash
 make plan C=connectivity
@@ -253,22 +255,24 @@ automatically with no config change.
   `template-pipelines`. Because it is a reusable-workflow call, the status check
   context is `pre-commit / Pre-commit`, not the bare job id — this matters for the
   required status checks configured in branch protection.
-- **ci-terraform**: half shared, the same split market-agent and repo-agent use.
-  `validate` comes from the reusable workflow in `jay-withers/workflows`, matrixed
-  over the four components through its `directories` input, and reports
-  `terraform / Terraform`; that workflow also owns the path filter, whose `changed`
-  output gates the `plan` job kept here. `plan` is matrixed over components and
-  gated on `vars.AZURE_CLIENT_ID != ''`, behind its own always-reporting
-  `terraform-plan` job. Require both contexts in branch protection.
-
-  It used to run a local `changes`/`validate`/`plan` trio behind a gate job that
-  reported `ci-terraform` — while the ruleset required `terraform / Terraform`,
-  which nothing here produced. Every pull request therefore sat pending for ever
-  and could only be merged by a ruleset bypass. `validate` replaces the template's
-  `test` job — no `.tftest.hcl` files exist yet; add a `test` job when they do.
+- **ci-terraform**: the shared credential-free validate, matrixed over every
+  component through its `directories` input, reporting `terraform / Terraform`.
+  No credentialled plan on pull requests, deliberately (as in github-repos): the
+  only identity that reads everything is the apply identity, which trusts the
+  main-only `apply` environment alone. The old local `plan` job never ran (no
+  identity existed) and was removed with its `terraform-plan` gate.
+- **cd-terraform**: on merge, plans management → governance → connectivity →
+  landingzones through `workflows`' `terraform-deploy.yml`, one chained job per
+  component, as `uai-azure-landingzone-apply-dev` in the `apply` environment. A
+  plan with changes opens a `terraform-pending` issue per component; a manual run
+  (Actions → Run workflow) applies them in order and stops at the first failure.
+  Never dispatch it yourself; the user applies. `bootstrap` is never in it.
+- **schedule-drift**: nightly `drift: true` plan of the same four components,
+  recording `OpsEvents_CL` rows.
 - **cd-tag**: semver tag on merge to `main`.
 
-Note a real limitation of `plan` in CI: components resolve each other with data
-sources, so a plan fails until the dependency has been applied at least once —
-`governance` needs `management`, `landingzones` needs `connectivity`. `fail-fast` is
-off so each leg reports independently.
+Note a real limitation of plans in CD: components resolve each other with data
+sources, so a plan fails until the dependency has been applied at least once:
+`governance` needs `management`, and `landingzones` needs `connectivity`. A new
+component's first apply is therefore by hand, or comes from a manual run that
+applies its dependency first.

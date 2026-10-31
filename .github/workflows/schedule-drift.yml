@@ -1,0 +1,76 @@
+name: schedule-drift
+
+# Nightly drift check: plans every component except bootstrap through the
+# shared terraform-deploy.yml with `drift: true`, which records each result
+# (ok, drifted or failed) as one OpsEvents_CL row and never applies or opens a
+# `terraform-pending` issue. The platform's alert on that table reports a
+# drifted component; Grafana shows the latest result per root. A drifted plan is
+# still a green run. To fix drift, run cd-terraform by hand, or change the
+# configuration to match.
+#
+# Runs in `apply`, as cd-terraform does: a schedule runs on main, which that
+# environment admits. The rows need EVENTS_INGESTION_ENDPOINT and
+# EVENTS_DCR_IMMUTABLE_ID on `apply`, which github-repos sets. Independent
+# jobs, not chained like cd-terraform's: a drift plan changes nothing, so order
+# doesn't matter. Staggered minute so the estate's drift checks don't all queue
+# at once.
+on:
+  schedule:
+    - cron: "13 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  management:
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # a clean plan closes a stale deploy-failed issue
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/management
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      drift: true
+
+  governance:
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # a clean plan closes a stale deploy-failed issue
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/governance
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      drift: true
+
+  connectivity:
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # a clean plan closes a stale deploy-failed issue
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/connectivity
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      drift: true
+
+  landingzones:
+    permissions:
+      id-token: write
+      contents: read
+      issues: write # a clean plan closes a stale deploy-failed issue
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
+    with:
+      directory: terraform/landingzones
+      environment: dev
+      github-environment: apply
+      environment-files: false
+      drift: true
