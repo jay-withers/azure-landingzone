@@ -13,7 +13,7 @@ handed to its own pipeline later without restructuring.
 | --------- | ---- | ------------- |
 | [`bootstrap`](terraform/bootstrap/) | Two state storage accounts, platform and landing zone (Entra-only, versioned, delete-locked). Its own state is local | cents/month |
 | [`management`](terraform/management/) | Log Analytics workspace with a daily ingestion cap, shared action group, LA daily-cap alert | per GB ingested, capped |
-| [`governance`](terraform/governance/) | Subscription policy assignments, activity log routing, spend budget, Service Health, admin-failure and privilege-change alerts, foundational Defender CSPM, EasyAuth app registrations | free |
+| [`governance`](terraform/governance/) | Subscription policy assignments, activity log routing, spend budget, Service Health, admin-failure and privilege-change alerts, foundational Defender CSPM | free |
 | [`connectivity`](terraform/connectivity/) | Hub VNet, private DNS zones, spoke route table, Azure Firewall (off by default) with health/SNAT alerts | ~$2/month with the firewall off |
 | [`landingzones`](terraform/landingzones/) | A resource group per landing zone, plus the identity its pipeline authenticates as, its grants on the hub, and its own state container | free |
 | [`workloads/`](terraform/workloads/) | Empty. Spokes live in their own repos for now — its README is the spoke contract | — |

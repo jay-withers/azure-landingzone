@@ -17,7 +17,7 @@ provider "azurerm" {
   features {}
 }
 
-# Tenant and credentials from the `az login` session, like azurerm. Only
-# main.app-registrations.tf uses it, and creating those registrations needs your
-# own Entra rights: no pipeline identity has Graph permissions.
+# Only here so this apply can destroy the EasyAuth app registrations still in
+# state (main.app-registrations.tf was removed: no Entra sign-in for users,
+# by decision). Delete it and the requirement above once that apply is done.
 provider "azuread" {}
