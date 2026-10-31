@@ -76,3 +76,17 @@ resource "azurerm_consumption_budget_subscription" "this" {
     }
   }
 }
+
+resource "azurerm_subscription_policy_assignment" "baseline" {
+  for_each = local.baseline_policies
+
+  name                 = "${each.key}-${var.environment}"
+  subscription_id      = data.azurerm_subscription.current.id
+  policy_definition_id = "/providers/Microsoft.Authorization/policyDefinitions/${each.value.id}"
+  display_name         = each.value.display_name
+  description          = "Baseline guardrail (${each.value.effect}): ${each.value.display_name}."
+
+  parameters = jsonencode({
+    effect = { value = each.value.effect }
+  })
+}

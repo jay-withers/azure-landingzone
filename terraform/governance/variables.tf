@@ -62,3 +62,28 @@ variable "github_repos_apply" {
     resource group the identity lives in beside every other uai-<repo>-deploy-dev.
   DESCRIPTION
 }
+
+variable "operator_object_id" {
+  type        = string
+  description = "Entra object ID of the one user assigned to every EasyAuth app registration (main.app-registrations.tf), and so the only one who can sign in to them."
+}
+
+variable "app_auth" {
+  type = map(object({
+    hostnames = list(string)
+    identity = object({
+      name                = string
+      resource_group_name = string
+    })
+  }))
+  description = <<-DESCRIPTION
+    Public container apps that get an Entra app registration for EasyAuth, keyed by
+    a short name that becomes part of the registration's display name.
+
+    `hostnames` are every host the app is reached on: its custom domain and its
+    default *.azurecontainerapps.io FQDN. Each gets a redirect URI, and a sign-in
+    from a host not listed fails with AADSTS50011. `identity` is the app's existing
+    user-assigned identity, which stands in for a client secret.
+  DESCRIPTION
+  default     = {}
+}

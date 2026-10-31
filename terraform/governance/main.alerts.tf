@@ -51,3 +51,30 @@ resource "azurerm_monitor_activity_log_alert" "admin_failures" {
     action_group_id = data.azurerm_monitor_action_group.management[0].id
   }
 }
+
+# Privilege and guardrail changes. One alert per operation, because an activity
+# log alert matches a single operation_name. Successful operations are what
+# matter here, so no level filter: a failure already reaches admin_failures.
+#
+# No caller filter either. The pipelines write role assignments too (github-repos
+# vending a new repo, an app granting its identity on its own vault), but rarely,
+# and an email per change is the point: it is the only record that reaches you
+# without going to look. Activity log alerts are free.
+resource "azurerm_monitor_activity_log_alert" "privilege_change" {
+  for_each = length(var.alert_emails) > 0 ? local.privilege_change_operations : {}
+
+  name                = "alert-${each.key}-${var.environment}"
+  resource_group_name = module.management_naming.resource_group.name
+  location            = "global"
+  scopes              = [data.azurerm_subscription.current.id]
+  description         = "${each.value} succeeded or was attempted anywhere in the subscription."
+
+  criteria {
+    category       = "Administrative"
+    operation_name = each.value
+  }
+
+  action {
+    action_group_id = data.azurerm_monitor_action_group.management[0].id
+  }
+}
