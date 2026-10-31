@@ -4,8 +4,8 @@ Terraform for a single-subscription Azure landing zone, built as a home lab on a
 Visual Studio subscription's $150/month credit.
 
 One repo, one component per landing zone concern, one Terraform state each.
-Components are applied independently and by hand; each is shaped so it can be
-handed to its own pipeline later without restructuring.
+`bootstrap` is applied by hand. The rest plan on every merge and apply when you
+run `cd-terraform` (see [Delivery](#delivery)).
 
 ## Components
 
@@ -18,7 +18,8 @@ handed to its own pipeline later without restructuring.
 | [`landingzones`](terraform/landingzones/) | A resource group per landing zone, plus the identity its pipeline authenticates as, its grants on the hub, and its own state container | free |
 | [`workloads/`](terraform/workloads/) | Empty. Spokes live in their own repos for now — its README is the spoke contract | — |
 
-Apply in that order:
+Apply in that order. On a fresh subscription that means by hand, because the
+pipeline's identity is created by `bootstrap`:
 
 ```bash
 make apply C=bootstrap
@@ -28,7 +29,8 @@ make apply C=connectivity
 make apply C=landingzones
 ```
 
-Nothing enforces it, and it is not arbitrary:
+After that, `cd-terraform` applies the last four in the same order. Nothing
+enforces the order for a hand apply, and it is not arbitrary:
 
 - **`bootstrap` first** — every other component's `backend.tf` points at the
   storage account it creates, so none of them can even `init` until it exists.
@@ -228,6 +230,28 @@ terraform -chdir=terraform/<component> init -migrate-state   # answer yes
 make plan C=<component>                                       # must show no changes
 rm terraform/<component>/terraform.tfstate*
 ```
+
+## Delivery
+
+- **Pull requests** run `ci-pre-commit` and the shared credential-free validate
+  (`terraform / Terraform`). There is no credentialled plan on a pull request: the
+  only identity that can read everything here is the apply one, and branch code
+  never gets it.
+- **Merge to `main`** runs `cd-terraform`, which plans management, governance,
+  connectivity and landingzones as `uai-azure-landingzone-apply-dev` in the
+  main-only `apply` GitHub environment. A plan with changes opens a
+  `terraform-pending` issue per component.
+- **To apply:** Actions → cd-terraform → Run workflow. It applies each
+  component's printed plan in order, and stops at the first failure.
+- **Nightly**, `schedule-drift` plans each component and records the result in
+  the platform's `OpsEvents_CL` table. It never applies.
+- **`bootstrap` is always by hand.** It creates the apply identity and its grants
+  (`main.pipeline.tf`), so no pipeline run can change what the pipeline may do.
+  github-repos creates the `apply` environment and its variables
+  (`pipeline_environments`).
+- **Break-glass:** `make apply C=<component>` still works with your own login.
+- **The firewall:** switching it on locally shows as drift on connectivity, and the
+  next `cd-terraform` run switches it off again.
 
 ## Prerequisites
 

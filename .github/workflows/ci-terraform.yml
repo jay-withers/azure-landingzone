@@ -1,14 +1,14 @@
 name: ci-terraform
 
-# Terraform CI. `validate` comes from the shared workflow; `plan` stays here.
+# Credential-free init and validate of every component except bootstrap's
+# backend, through the shared workflow, which owns the path filter and the
+# always-reporting gate that becomes "terraform / Terraform".
 #
-# The split is the one market-agent and repo-agent use. It matters here for a
-# specific reason: the ruleset requires "terraform / Terraform", the context the
-# shared workflow reports, and nothing in this repository reported it — the
-# local `ci-terraform` gate this file used to end with reported `ci-terraform`
-# instead. A required check that nothing reports leaves every pull request
-# pending for ever rather than failing it, which is why this repo's Renovate
-# backlog could only ever be merged by a ruleset bypass.
+# No credentialled plan on pull requests, deliberately, as in github-repos: the
+# only identity that can read everything these components manage is the apply
+# identity, and branch code never gets it (its federated credential trusts the
+# main-only `apply` environment alone). The real plan is cd-terraform's, posted
+# in the `terraform-pending` issue for each component after merge.
 on:
   pull_request:
     branches: [main]
@@ -17,103 +17,14 @@ permissions:
   contents: read
 
 jobs:
-  # Credential-free init and validate, one matrix leg per component. The shared
-  # workflow owns the path filter and the always-reporting gate that becomes
-  # "terraform / Terraform". pull-requests: read is what its filter needs; the
+  # pull-requests: read is what the shared workflow's path filter needs; the
   # filter runs inside that workflow, so the permission is granted from here.
   terraform:
     permissions:
       contents: read
       pull-requests: read
-    uses: jay-withers/workflows/.github/workflows/terraform.yml@d6a29096bfcd0f36ba671c700faa18f8c2fc5d63 # v1.14.4
+    uses: jay-withers/workflows/.github/workflows/terraform.yml@058b978a7ace81ab39031ba2397cac9d526cd4a7 # v1.22.1
     with:
       directories: >-
         ["terraform/bootstrap", "terraform/management", "terraform/governance",
         "terraform/connectivity", "terraform/landingzones"]
-
-  # Plans each component against Azure using GitHub OIDC. Skipped until the
-  # AZURE_CLIENT_ID repository variable is set (see README), so a fresh clone
-  # does not fail this check before Azure auth is configured.
-  #
-  # IMPORTANT: a plan is only meaningful once the component's dependencies have
-  # been applied at least once. Components resolve each other with data sources
-  # keyed off the naming convention (see the repo README), and a data source for
-  # a resource that does not exist yet fails at plan time — so `governance`
-  # fails until `management` is applied, and `landingzones` fails until
-  # `connectivity` is. fail-fast is off so each leg reports independently rather
-  # than one missing dependency masking the rest. Apply order is bootstrap →
-  # management → governance → connectivity → landingzones.
-  #
-  # The `changed` output reuses the shared workflow's path filter rather than
-  # declaring a second dorny/paths-filter here that would drift from it. The
-  # cost is ordering: `needs` waits for the whole called workflow, so this
-  # starts after validate rather than beside it.
-  plan:
-    needs: terraform
-    if: needs.terraform.outputs.changed == 'true' && vars.AZURE_CLIENT_ID != ''
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        component: [bootstrap, management, governance, connectivity, landingzones]
-    permissions:
-      id-token: write
-      contents: read
-    defaults:
-      run:
-        working-directory: terraform/${{ matrix.component }}
-    env:
-      ARM_USE_OIDC: "true"
-      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      # The state account has shared keys disabled; the backend authenticates
-      # with the same OIDC token as the provider.
-      ARM_USE_AZUREAD: "true"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Resolve Terraform version
-        id: tfversion
-        run: echo "version=$(cat "$GITHUB_WORKSPACE/.terraform-version")" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
-        with:
-          terraform_version: ${{ steps.tfversion.outputs.version }}
-          terraform_wrapper: false
-
-      # Every component except bootstrap inits against the remote backend, so this
-      # plans against real state. The CI identity needs Storage Blob Data
-      # Contributor on the state account (bootstrap's state_stores.platform.blob_contributors) —
-      # plan takes a blob lease to lock. bootstrap keeps local state, so its leg
-      # plans against empty state and shows everything as a create.
-      - name: Terraform init
-        run: terraform init -input=false
-
-      - name: Terraform plan
-        run: terraform plan -input=false -no-color
-
-  # Required status check for the plan job. The shared workflow's own gate
-  # ("terraform / Terraform") covers only what runs inside it, so plan needs an
-  # always-reporting job of its own or a failed plan could not block a merge.
-  #
-  # Skipped counts as success: a pull request touching no Terraform, and every
-  # pull request until AZURE_CLIENT_ID is set, must pass rather than hang. Mark
-  # this check ("terraform-plan") required in the ruleset alongside
-  # "terraform / Terraform".
-  terraform-plan:
-    needs: plan
-    if: always()
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Verify the plan job
-        env:
-          PLAN_RESULT: ${{ needs.plan.result }}
-        run: |
-          echo "plan=$PLAN_RESULT"
-          if [ "$PLAN_RESULT" = "failure" ]; then
-            echo "::error::A Terraform plan leg failed."
-            exit 1
-          fi
