@@ -31,8 +31,11 @@ landing_zones = {
       "environment-dev" = "repo:jay-withers/terraform-root-aks:environment:dev"
     }
 
-    # Empty would grant every hub zone. The cluster only needs the vault zone today.
-    linkable_dns_zones = ["privatelink.vaultcore.azure.net"]
+    # Empty would grant every hub zone. The vault zone for the workload Key Vault,
+    # the blob zone for Loki's log store (terraform-root-aks' main.loki.tf). Without
+    # the blob zone its plans fail reading the zone, which hand applies as Owner
+    # never showed.
+    linkable_dns_zones = ["privatelink.vaultcore.azure.net", "privatelink.blob.core.windows.net"]
 
     # The cluster sets its own diagnostic settings against the management
     # workspace directly, rather than governance reaching in via policy — see
