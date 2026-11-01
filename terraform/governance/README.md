@@ -12,7 +12,8 @@ under `Administrative`/`Error` instead, which is what this alerts on.
 
 Plus one alert per privilege or guardrail change (`local.privilege_change_operations`):
 role assignment and role definition writes and deletes, policy assignment deletes,
-policy exemption writes, federated credential writes, and Key Vault deletes. They
+policy exemption writes, federated credential writes, Key Vault deletes, and
+management lock deletes (the store-of-record locks, and bootstrap's state ones). They
 aren't filtered by caller, so the pipelines' own role assignments email you too.
 That's rare, and it's the record you'd want.
 
