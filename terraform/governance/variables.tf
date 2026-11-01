@@ -24,7 +24,7 @@ variable "management_workload" {
 
 variable "monthly_budget" {
   type        = number
-  description = "Monthly spend the budget alerts against, in the subscription's billing currency. Set to the credit allowance so alerts fire before it runs out."
+  description = "Monthly spend the budget alerts against, in the subscription's billing currency. Set to the Visual Studio credit allowance (150) while that credit lasts. On a pay-as-you-go subscription there is no spending limit behind it, so set it to what you are willing to pay."
   default     = 150
 }
 

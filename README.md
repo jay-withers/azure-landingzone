@@ -87,6 +87,9 @@ Three more things that matter more than the firewall on this budget:
 - **The budget alert.** Set `budget_alert_emails` in
   [`governance/terraform.tfvars`](terraform/governance/terraform.tfvars) — no
   budget is created while it is empty, and a budget only notifies, it never caps.
+  The same addresses get a forecast warning at 100% and Cost Management's daily
+  anomaly alert. `monthly_budget` is the Visual Studio credit; on a pay-as-you-go
+  subscription nothing stops spend at any figure, so set it to what you'd pay.
 - **The operational alerts.** Separate from the above: set `alert_emails` in
   [`management/terraform.tfvars`](terraform/management/terraform.tfvars) to get a
   shared action group and an alert on the Log Analytics daily cap actually being
