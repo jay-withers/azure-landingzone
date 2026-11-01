@@ -75,6 +75,7 @@ force a fresh compliance scan and sweep again (safe to re-run).
 | Name | Type |
 | ---- | ---- |
 | [azurerm_consumption_budget_subscription.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/consumption_budget_subscription) | resource |
+| [azurerm_cost_anomaly_alert.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cost_anomaly_alert) | resource |
 | [azurerm_federated_identity_credential.github_repos_apply](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/federated_identity_credential) | resource |
 | [azurerm_monitor_activity_log_alert.admin_failures](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_activity_log_alert) | resource |
 | [azurerm_monitor_activity_log_alert.privilege_change](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_activity_log_alert) | resource |
@@ -110,7 +111,7 @@ force a fresh compliance scan and sweep again (safe to re-run).
 | <a name="input_github_repos_apply"></a> [github\_repos\_apply](#input\_github\_repos\_apply) | The identity jay-withers/github-repos applies with from CI (main.github-repos.tf).<br/><br/>`subject` is the OIDC subject of that repo's `apply` GitHub environment, in<br/>GitHub's immutable form: repo:<owner>@<owner id>/<repo>@<repo id>:environment:apply.<br/>The readable repo:<owner>/<repo> form never matches its tokens (AADSTS700213).<br/>The rest locate github-repos' state container in the "shared" account, and the<br/>resource group the identity lives in beside every other uai-<repo>-deploy-dev. | <pre>object({<br/>    subject              = string<br/>    resource_group_name  = optional(string, "rg-tfstate-shared")<br/>    storage_account_name = optional(string, "sttfsharedjw")<br/>    container_name       = optional(string, "github-repos")<br/>  })</pre> | n/a | yes |
 | <a name="input_location"></a> [location](#input\_location) | Azure region for the diagnostic-settings policy assignments' managed identities. Governance is otherwise region-agnostic — this exists only because a SystemAssigned identity requires one. | `string` | `"westeurope"` | no |
 | <a name="input_management_workload"></a> [management\_workload](#input\_management\_workload) | The management component's workload name. Used to locate its Log Analytics workspace — see the naming contract in the repo README. | `string` | `"mgmt"` | no |
-| <a name="input_monthly_budget"></a> [monthly\_budget](#input\_monthly\_budget) | Monthly spend the budget alerts against, in the subscription's billing currency. Set to the credit allowance so alerts fire before it runs out. | `number` | `150` | no |
+| <a name="input_monthly_budget"></a> [monthly\_budget](#input\_monthly\_budget) | Monthly spend the budget alerts against, in the subscription's billing currency. Set to the Visual Studio credit allowance (150) while that credit lasts. On a pay-as-you-go subscription there is no spending limit behind it, so set it to what you are willing to pay. | `number` | `150` | no |
 
 ## Outputs
 

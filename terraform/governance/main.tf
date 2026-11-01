@@ -49,9 +49,10 @@ resource "azurerm_monitor_diagnostic_setting" "activity_log" {
   }
 }
 
-# The backstop for a fixed monthly credit: alerts at 50%, 80% and 100% of forecast
-# so overspend surfaces early rather than as resources refusing to start. A budget
-# only notifies — it does not cap anything.
+# The backstop for a fixed monthly credit: alerts at 50%, 80% and 100% of actual
+# spend, plus 100% of forecast, so an overrun is heard about while there is still
+# a month left to act rather than when the credit is gone. A budget only
+# notifies — it does not cap anything.
 resource "azurerm_consumption_budget_subscription" "this" {
   count = length(var.budget_alert_emails) > 0 ? 1 : 0
 
@@ -75,6 +76,28 @@ resource "azurerm_consumption_budget_subscription" "this" {
       contact_emails = var.budget_alert_emails
     }
   }
+
+  notification {
+    enabled        = true
+    threshold      = 100
+    operator       = "GreaterThan"
+    threshold_type = "Forecasted"
+    contact_emails = var.budget_alert_emails
+  }
+}
+
+# Cost Management's anomaly detection over the whole subscription: it learns the
+# daily spend pattern and emails on a day well outside it. The budget above only
+# sees the monthly total, so a session resource left running shows up there days
+# late; this sees the first day's step. Free, and same recipients as the budget.
+resource "azurerm_cost_anomaly_alert" "this" {
+  count = length(var.budget_alert_emails) > 0 ? 1 : 0
+
+  name            = "anomaly-${var.environment}"
+  display_name    = "Cost anomaly (${var.environment})"
+  subscription_id = data.azurerm_subscription.current.id
+  email_subject   = "Azure cost anomaly in ${data.azurerm_subscription.current.display_name}"
+  email_addresses = var.budget_alert_emails
 }
 
 resource "azurerm_subscription_policy_assignment" "baseline" {
