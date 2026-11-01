@@ -1,0 +1,47 @@
+name: manual-terraform-unlock
+
+# Releases a stuck Terraform state lock, through the shared
+# terraform-unlock.yml. Use it when a plan or apply died mid-run (a cancelled
+# job, a lost runner) and every later run fails with "Error acquiring the
+# state lock": run this by hand (Actions -> Run workflow) with the lock ID
+# that error prints, then re-run the plan or apply.
+#
+# Same environment and identity as cd-terraform (`apply`, main only), one
+# component at a time, so no extra grant. bootstrap is not offered: it stays
+# manual, so unlock it locally (`terraform force-unlock` in
+# terraform/bootstrap).
+# The shared job refuses while another Terraform run is in progress here
+# (hence `actions: read`).
+on:
+  workflow_dispatch:
+    inputs:
+      lock-id:
+        description: Lock ID from the "Error acquiring the state lock" message
+        required: true
+        type: string
+      component:
+        description: Component whose state is locked
+        required: true
+        type: choice
+        options:
+          - management
+          - governance
+          - connectivity
+          - landingzones
+
+permissions:
+  contents: read
+
+jobs:
+  unlock:
+    permissions:
+      id-token: write
+      contents: read
+      actions: read # the in-progress check
+    uses: jay-withers/workflows/.github/workflows/terraform-unlock.yml@b601226fd14608467b882d453891af76b3d4c41a # v1.23.0
+    with:
+      lock-id: ${{ inputs.lock-id }}
+      directory: terraform/${{ inputs.component }}
+      environment: dev
+      github-environment: apply
+      environment-files: false
