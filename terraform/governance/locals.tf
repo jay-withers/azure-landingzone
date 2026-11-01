@@ -9,6 +9,7 @@ locals {
     policyexemption-write   = "Microsoft.Authorization/policyExemptions/write"
     federatedcred-write     = "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials/write"
     keyvault-delete         = "Microsoft.KeyVault/vaults/delete"
+    lock-delete             = "Microsoft.Authorization/locks/delete"
   }
 
   # Built-in definitions guarding settings every repo already gets right, so a
