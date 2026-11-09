@@ -1,55 +1,41 @@
-# The one pipeline identity with subscription-wide rights, granted here rather
-# than by github-repos itself so the repo can never widen, or lose, its own
-# access in an apply. Changing it means an apply of this component, by hand.
+# github-repos' apply identity (uai-github-repos-apply-dev) used to be created
+# and granted here. github-repos' own bootstrap (`make bootstrap`, run by hand
+# as an Owner of the subscription) now owns it, so the platform estate can be
+# rebuilt without this landing zone. Its rights still never come from an apply
+# that runs as the identity itself.
 #
-# github-repos creates every other repo's identity, resource groups and role
-# assignments, including Role Based Access Control Administrator and a custom
-# role at subscription scope. That needs Contributor plus User Access
-# Administrator on the subscription: the conditioned RBAC Administrator the app
-# repos get can't assign RBAC Administrator, and neither it nor Contributor can
-# write role definitions. Effectively Owner, so this is the exception to "keep
-# grants targeted", not a model for others.
-#
-# What keeps it to merged code: the federated credential trusts only the
-# `apply` GitHub environment, which github-repos restricts to main. Pull
-# request plans run in `dev` as the repo's ordinary state consumer identity,
-# with Reader.
-#
-# principal_type is set on every assignment: without it azurerm looks the
-# principal up in Entra, which fails intermittently on a just-created identity.
-resource "azurerm_user_assigned_identity" "github_repos_apply" {
-  name                = "uai-github-repos-apply-${var.environment}"
-  location            = data.azurerm_resource_group.github_repos_state.location
-  resource_group_name = data.azurerm_resource_group.github_repos_state.name
-  tags = {
-    owner     = "jay"
-    component = "identity"
+# These blocks drop the identity, its federated credential and its grants from
+# this component's state without destroying them. The live identity keeps
+# working throughout. Delete this file once every state that held them has
+# been applied with it.
+removed {
+  from = azurerm_user_assigned_identity.github_repos_apply
+
+  lifecycle {
+    destroy = false
   }
 }
 
-resource "azurerm_federated_identity_credential" "github_repos_apply" {
-  name                = "github-repos-apply"
-  parent_id           = azurerm_user_assigned_identity.github_repos_apply.id
-  resource_group_name = data.azurerm_resource_group.github_repos_state.name
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = "https://token.actions.githubusercontent.com"
-  subject             = var.github_repos_apply.subject
+removed {
+  from = azurerm_federated_identity_credential.github_repos_apply
+
+  lifecycle {
+    destroy = false
+  }
 }
 
-resource "azurerm_role_assignment" "github_repos_apply" {
-  for_each = toset(["Contributor", "User Access Administrator"])
+removed {
+  from = azurerm_role_assignment.github_repos_apply
 
-  scope                = data.azurerm_subscription.current.id
-  role_definition_name = each.key
-  principal_id         = azurerm_user_assigned_identity.github_repos_apply.principal_id
-  principal_type       = "ServicePrincipal"
+  lifecycle {
+    destroy = false
+  }
 }
 
-# Owner and User Access Administrator grant no blob data access, and the
-# account has shared keys off. Its own container only.
-resource "azurerm_role_assignment" "github_repos_apply_state" {
-  scope                = data.azurerm_storage_container.github_repos_state.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.github_repos_apply.principal_id
-  principal_type       = "ServicePrincipal"
+removed {
+  from = azurerm_role_assignment.github_repos_apply_state
+
+  lifecycle {
+    destroy = false
+  }
 }
