@@ -63,7 +63,7 @@ force a fresh compliance scan and sweep again (safe to re-run).
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_management_naming"></a> [management\_naming](#module\_management\_naming) | Azure/naming/azurerm | ~> 0.4 |
+| <a name="module_management_naming"></a> [management\_naming](#module\_management\_naming) | Azure/naming/azurerm | ~> 0.4.4 |
 
 ## Resources
 

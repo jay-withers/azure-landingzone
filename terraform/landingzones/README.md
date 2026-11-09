@@ -30,11 +30,11 @@ first, then lift it.
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_hub_naming"></a> [hub\_naming](#module\_hub\_naming) | Azure/naming/azurerm | ~> 0.4 |
-| <a name="module_management_naming"></a> [management\_naming](#module\_management\_naming) | Azure/naming/azurerm | ~> 0.4 |
-| <a name="module_naming"></a> [naming](#module\_naming) | Azure/naming/azurerm | ~> 0.4 |
-| <a name="module_resource_group"></a> [resource\_group](#module\_resource\_group) | Azure/avm-res-resources-resourcegroup/azurerm | ~> 0.4 |
-| <a name="module_state_naming"></a> [state\_naming](#module\_state\_naming) | Azure/naming/azurerm | ~> 0.4 |
+| <a name="module_hub_naming"></a> [hub\_naming](#module\_hub\_naming) | Azure/naming/azurerm | ~> 0.4.4 |
+| <a name="module_management_naming"></a> [management\_naming](#module\_management\_naming) | Azure/naming/azurerm | ~> 0.4.4 |
+| <a name="module_naming"></a> [naming](#module\_naming) | Azure/naming/azurerm | ~> 0.4.4 |
+| <a name="module_resource_group"></a> [resource\_group](#module\_resource\_group) | Azure/avm-res-resources-resourcegroup/azurerm | ~> 0.5.0 |
+| <a name="module_state_naming"></a> [state\_naming](#module\_state\_naming) | Azure/naming/azurerm | ~> 0.4.4 |
 
 ## Resources
 
