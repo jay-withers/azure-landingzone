@@ -6,7 +6,7 @@ data "azurerm_subscription" "current" {}
 module "management_naming" {
   #checkov:skip=CKV_TF_1:Registry-sourced module pinned to a version constraint; commit-hash pinning does not apply to Terraform Registry sources.
   source  = "Azure/naming/azurerm"
-  version = "~> 0.4"
+  version = "~> 0.4.4"
 
   suffix = [var.management_workload, var.environment]
 }

@@ -27,12 +27,12 @@ action group (`management_workload` + `alert_emails` must resolve there first).
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_management_naming"></a> [management\_naming](#module\_management\_naming) | Azure/naming/azurerm | ~> 0.4 |
-| <a name="module_naming"></a> [naming](#module\_naming) | Azure/naming/azurerm | ~> 0.4 |
+| <a name="module_management_naming"></a> [management\_naming](#module\_management\_naming) | Azure/naming/azurerm | ~> 0.4.4 |
+| <a name="module_naming"></a> [naming](#module\_naming) | Azure/naming/azurerm | ~> 0.4.4 |
 | <a name="module_nsg_privatelink"></a> [nsg\_privatelink](#module\_nsg\_privatelink) | Azure/avm-res-network-networksecuritygroup/azurerm | ~> 0.6.0 |
-| <a name="module_private_dns_zones"></a> [private\_dns\_zones](#module\_private\_dns\_zones) | Azure/avm-res-network-privatednszone/azurerm | ~> 0.5 |
-| <a name="module_resource_group"></a> [resource\_group](#module\_resource\_group) | Azure/avm-res-resources-resourcegroup/azurerm | ~> 0.4 |
-| <a name="module_vnet"></a> [vnet](#module\_vnet) | Azure/avm-res-network-virtualnetwork/azurerm | ~> 0.22 |
+| <a name="module_private_dns_zones"></a> [private\_dns\_zones](#module\_private\_dns\_zones) | Azure/avm-res-network-privatednszone/azurerm | ~> 0.6.0 |
+| <a name="module_resource_group"></a> [resource\_group](#module\_resource\_group) | Azure/avm-res-resources-resourcegroup/azurerm | ~> 0.5.0 |
+| <a name="module_vnet"></a> [vnet](#module\_vnet) | Azure/avm-res-network-virtualnetwork/azurerm | ~> 0.23.0 |
 
 ## Resources
 

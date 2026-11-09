@@ -167,8 +167,13 @@ policy and public IPs — the `count` toggles and the policy/firewall lifecycle 
 read more plainly on bare resources. Keep that split.
 
 The private DNS zone module takes `parent_id` (the resource group's *resource ID*),
-not `resource_group_name`, and each `virtual_network_links` entry needs an explicit
-`name`.
+not `resource_group_name`, each `virtual_network_links` entry needs an explicit
+`name`, and from 0.6 it needs `location` (for its telemetry deployment).
+
+**Pin registry modules to a minor version** (`~> 0.6.0`, not `~> 0.6`). They are
+all 0.x, where a minor release may break: `~> 0.5` let CI pick up privatednszone
+0.6.0, which failed every connectivity plan, and moved the other modules' telemetry
+under every component. Renovate proposes the next minor as a PR to review instead.
 
 ## Commands
 

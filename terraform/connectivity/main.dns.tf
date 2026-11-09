@@ -8,11 +8,12 @@
 module "private_dns_zones" {
   #checkov:skip=CKV_TF_1:Registry-sourced AVM module pinned to a version constraint; commit-hash pinning does not apply to Terraform Registry sources.
   source  = "Azure/avm-res-network-privatednszone/azurerm"
-  version = "~> 0.5"
+  version = "~> 0.6.0"
 
   for_each = toset(var.private_dns_zones)
 
   domain_name = each.value
+  location    = var.location
   parent_id   = module.resource_group.resource_id
   tags        = local.tags
 
