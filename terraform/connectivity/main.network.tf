@@ -7,6 +7,10 @@ module "nsg_privatelink" {
   source  = "Azure/avm-res-network-networksecuritygroup/azurerm"
   version = "~> 0.6.0"
 
+  # Off: each apply stamps its time into the telemetry deployment, so every
+  # plan (and the nightly drift check) would show a change forever.
+  enable_telemetry = false
+
   name      = "${module.naming.network_security_group.name}-privatelink"
   location  = var.location
   parent_id = module.resource_group.resource_id
@@ -17,6 +21,10 @@ module "vnet" {
   #checkov:skip=CKV_TF_1:Registry-sourced AVM module pinned to a version constraint; commit-hash pinning does not apply to Terraform Registry sources.
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
   version = "~> 0.23.0"
+
+  # Off: each apply stamps its time into the telemetry deployment, so every
+  # plan (and the nightly drift check) would show a change forever.
+  enable_telemetry = false
 
   name          = module.naming.virtual_network.name
   location      = var.location

@@ -168,7 +168,11 @@ read more plainly on bare resources. Keep that split.
 
 The private DNS zone module takes `parent_id` (the resource group's *resource ID*),
 not `resource_group_name`, each `virtual_network_links` entry needs an explicit
-`name`, and from 0.6 it needs `location` (for its telemetry deployment).
+`name`, and from 0.6 it needs `location` while telemetry is on.
+
+**Every AVM module sets `enable_telemetry = false`.** Since the 2026-11 releases the
+telemetry is an ARM deployment that records each apply's time, so with it on every
+plan shows a change and the nightly drift check never comes back clean.
 
 **Pin registry modules to a minor version** (`~> 0.6.0`, not `~> 0.6`). They are
 all 0.x, where a minor release may break: `~> 0.5` let CI pick up privatednszone
