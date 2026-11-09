@@ -21,6 +21,10 @@ module "resource_group" {
   source  = "Azure/avm-res-resources-resourcegroup/azurerm"
   version = "~> 0.5.0"
 
+  # Off: each apply stamps its time into the telemetry deployment, so every
+  # plan (and the nightly drift check) would show a change forever.
+  enable_telemetry = false
+
   for_each = var.state_stores
 
   name     = module.naming[each.key].resource_group.name

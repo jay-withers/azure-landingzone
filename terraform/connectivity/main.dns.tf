@@ -10,6 +10,10 @@ module "private_dns_zones" {
   source  = "Azure/avm-res-network-privatednszone/azurerm"
   version = "~> 0.6.0"
 
+  # Off: each apply stamps its time into the telemetry deployment, so every
+  # plan (and the nightly drift check) would show a change forever.
+  enable_telemetry = false
+
   for_each = toset(var.private_dns_zones)
 
   domain_name = each.value
