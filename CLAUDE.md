@@ -64,18 +64,18 @@ GitHub repo alongside it. Consequences to preserve:
   one exception is `bootstrap`'s `state_stores.*.blob_contributors`, which include people,
   so `principal_type` comes from the input there — but it is still always set.
 
-**One deliberate exception: github-repos' apply identity** (`governance`'s
-`main.github-repos.tf`). It holds Contributor + User Access Administrator on the
-subscription, because github-repos creates every other pipeline identity's grants,
-including a subscription-scope custom role. It is granted here so github-repos can't
-change its own rights, and federated only to that repo's `main`-only `apply`
-environment. Don't copy it for anything else.
+**One deliberate exception: this repo's own apply identity** (`bootstrap`'s
+`main.pipeline.tf`, `uai-azure-landingzone-apply-dev`). It holds Contributor + User
+Access Administrator on the subscription, federated only to this repo's `main`-only
+`apply` environment, for cd-terraform over every component except `bootstrap`. It
+lives in `bootstrap` because that component is never applied from CI, so no pipeline
+apply can remove or re-scope the identity it runs as. Don't copy it for anything else.
 
-**And its twin: this repo's own apply identity** (`bootstrap`'s `main.pipeline.tf`,
-`uai-azure-landingzone-apply-dev`). Same rights, same main-only `apply` environment,
-for cd-terraform over every component except `bootstrap`. It lives in `bootstrap`
-because that component is never applied from CI, so no pipeline apply can remove
-or re-scope the identity it runs as.
+**github-repos' apply identity is not this repo's.** `governance` used to create it.
+github-repos' own `make bootstrap` now owns it (same rights, same reasoning), so the
+container platform and apps can be rebuilt without this landing zone.
+`governance/main.github-repos.tf` holds only the `removed` blocks that forgot it
+without destroying it.
 
 ## The cost constraint is a design constraint
 
