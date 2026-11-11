@@ -31,7 +31,7 @@ on:
     paths:
       - "terraform/**"
       - "!terraform/bootstrap/**"
-      - ".terraform-version"
+      - "mise.toml"
       - ".github/workflows/cd-terraform.yml"
   # The manual apply: also re-runs a failed apply, or corrects drift.
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@097b8b97138b3af033cab166dd31e84deccf8f9d # v1.24.11
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@1961dfbd65114641c5fcfd4677a7ca3f0668e513 # v1.26.1
     with:
       directory: terraform/management
       environment: dev
@@ -60,7 +60,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@097b8b97138b3af033cab166dd31e84deccf8f9d # v1.24.11
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@1961dfbd65114641c5fcfd4677a7ca3f0668e513 # v1.26.1
     with:
       directory: terraform/governance
       environment: dev
@@ -75,7 +75,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@097b8b97138b3af033cab166dd31e84deccf8f9d # v1.24.11
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@1961dfbd65114641c5fcfd4677a7ca3f0668e513 # v1.26.1
     with:
       directory: terraform/connectivity
       environment: dev
@@ -90,7 +90,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@097b8b97138b3af033cab166dd31e84deccf8f9d # v1.24.11
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@1961dfbd65114641c5fcfd4677a7ca3f0668e513 # v1.26.1
     with:
       directory: terraform/landingzones
       environment: dev
