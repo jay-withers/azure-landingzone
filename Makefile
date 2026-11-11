@@ -26,7 +26,8 @@ help: ## Show this help
 	@printf "\nComponents (apply in this order): %s\n" "$(COMPONENTS)"
 	@printf "Every terraform target needs C=<component>.\n"
 
-install: ## Install pre-commit hooks (run once after cloning)
+install: ## Install mise tools and pre-commit hooks (run once after cloning)
+	mise install
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 

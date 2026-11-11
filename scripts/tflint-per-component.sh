@@ -26,7 +26,7 @@ tflint_config="$tf_dir/.tflint.hcl"
 
 # Deduplicated with sort -u rather than an associative array: `declare -A` is
 # bash 4+, and macOS ships bash 3.2 at /bin/bash, so the template's own
-# tflint-per-env.sh fails outside the Linux dev container. Other scripts in
+# tflint-per-env.sh fails on macOS. Other scripts in
 # this repo avoid bash-4+ builtins like mapfile for the same reason.
 lint_dirs=()
 while IFS= read -r dir; do

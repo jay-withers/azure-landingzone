@@ -258,13 +258,20 @@ rm terraform/<component>/terraform.tfstate*
 
 ## Prerequisites
 
-Built around the dev container at [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json),
-which provides Terraform, TFLint, terraform-docs and Checkov and runs `make install`
-on creation. Prefer working inside it so tool versions match CI. The Terraform
-version is pinned in [`.terraform-version`](.terraform-version) at the repo root,
-where tfenv/tenv and CI can find it.
+Once per machine, set up the tools with
+[jay-withers/toolchain](https://github.com/jay-withers/toolchain)
+(`bash src/setup.sh`), which installs [mise](https://mise.jdx.dev). Then, in
+this repo:
 
-- Terraform — version per `.terraform-version`
+```bash
+mise trust && make install   # make install runs `mise install` first
+```
+
+`mise.toml` pins every tool this repo's hooks, build and CI use; CI installs
+the same versions (jay-withers/workflows v1.26.1+). Add a tool there rather
+than installing it by hand.
+
+- Terraform, TFLint, terraform-docs, Checkov — versions per `mise.toml`
 - Azure CLI, logged in, with Owner or Contributor + User Access Administrator
 - The target subscription exported for the provider:
 
@@ -312,9 +319,8 @@ scripts/
   check-tf-file-layout.sh
   tflint-per-component.sh
   checkov-per-component.sh
-.devcontainer/
 .pre-commit-config.yaml
-.terraform-version
+mise.toml
 commitlint.config.js
 renovate.json
 Makefile

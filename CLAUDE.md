@@ -199,7 +199,7 @@ Requires `ARM_SUBSCRIPTION_ID` exported — azurerm 4.x does not infer it from t
 
 This repo is aligned to
 [`jay-withers/template-terraform-root`](https://github.com/jay-withers/template-terraform-root)
-— same dev container, pre-commit hook set, scripts, Renovate preset, workflow
+— same `mise.toml` tools, pre-commit hook set, scripts, Renovate preset, workflow
 naming (`ci-` for PR checks, `cd-` for post-merge) and file-layout enforcement.
 
 **The one structural divergence: the template's axis is per-environment, this repo's
@@ -216,8 +216,9 @@ subscription), each with its own committed `terraform.tfvars`. So:
   reusable module; these are root configs)
 
 Keep the rest in step with the template. Ecosystem-wide Renovate policy belongs in
-`renovate`, not here — `renovate.json` holds only `autoApprove` and the two
-regex managers for `.terraform-version` and `.tflint.hcl`.
+`renovate`, not here — `renovate.json` holds only `autoApprove` and the
+regex manager for `.tflint.hcl` (Terraform is in `mise.toml`, bumped by the
+shared preset's mise manager).
 
 `scripts/check-tf-file-layout.sh` is a verbatim copy; if it changes upstream,
 re-copy rather than hand-editing. One fix was needed in the per-component scripts:
