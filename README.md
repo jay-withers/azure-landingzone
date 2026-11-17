@@ -295,12 +295,12 @@ make install                         # pre-commit hooks (once after cloning)
 make lint                            # all linters
 make fmt                             # terraform fmt across terraform/
 
-make init     C=connectivity         # every terraform target needs C=
+make init     C=connectivity         # every terraform target but test needs C=
 make validate C=connectivity
 make plan     C=connectivity
 make apply    C=connectivity         # break-glass; cd-terraform applies (bootstrap excepted)
 make destroy  C=connectivity
-make test     C=connectivity         # terraform test, mocked providers (no tests written yet)
+make test                            # terraform test, mocked providers, every component (C= for one; no tests written yet)
 make validate-all                    # validate every component
 make cost                            # what is currently billing hourly
 make remediate POLICY=diag-alllogs-dev  # sweep existing resources against a DeployIfNotExists policy
