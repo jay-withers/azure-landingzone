@@ -7,7 +7,7 @@
 # reads connectivity's hub VNet and DNS zones.
 COMPONENTS := bootstrap management governance connectivity landingzones
 
-# Component selector. Every terraform target needs it:
+# Component selector. Every terraform target needs it (test excepted, see below):
 #
 #   make plan C=connectivity
 #   make apply C=connectivity TFARGS='-var firewall_enabled=true'
@@ -24,7 +24,7 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 	@printf "\nComponents (apply in this order): %s\n" "$(COMPONENTS)"
-	@printf "Every terraform target needs C=<component>.\n"
+	@printf "Every terraform target needs C=<component>, except test (default: every component).\n"
 
 install: ## Install mise tools and pre-commit hooks (run once after cloning)
 	mise install
@@ -61,8 +61,21 @@ apply: init ## terraform apply (pass extra flags with TFARGS=...)
 destroy: init ## terraform destroy
 	terraform -chdir=$(DIR) destroy $(TFARGS)
 
-test: init ## terraform test (mocked providers — no Azure auth). No tests written yet.
-	terraform -chdir=$(DIR) test
+# Unlike the other terraform targets, C= is optional here and init skips the
+# backend: terraform test runs against mocked providers, so it needs neither
+# Azure credentials nor state. With no C it covers every component, which is what
+# lets factory's verify.sh (a bare `make test`) pass. A component with no
+# tests/*.tftest.hcl is reported and skipped, not failed.
+test: ## terraform test, mocked providers, no Azure auth (C=<component> for one; default every component)
+	@$(if $(C),$(MAKE) --no-print-directory check-component C=$(C) &&) \
+	for c in $(or $(C),$(COMPONENTS)); do \
+		if ! ls $(TF_DIR)/$$c/tests/*.tftest.hcl >/dev/null 2>&1; then \
+			echo "==> $$c: no tests"; continue; \
+		fi; \
+		echo "==> $$c"; \
+		terraform -chdir=$(TF_DIR)/$$c init -backend=false >/dev/null || exit 1; \
+		terraform -chdir=$(TF_DIR)/$$c test || exit 1; \
+	done
 
 validate-all: ## init + validate every component
 	@for c in $(COMPONENTS); do \
