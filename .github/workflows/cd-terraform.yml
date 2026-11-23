@@ -45,7 +45,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@ed119fa2b4c554074ef189cc6d16696a41a833b6 # v1.31.2
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@7e124ba6227a9efebd37b0fff487bad8a1d83975 # v1.31.5
     with:
       directory: terraform/management
       environment: dev
@@ -60,7 +60,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@ed119fa2b4c554074ef189cc6d16696a41a833b6 # v1.31.2
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@7e124ba6227a9efebd37b0fff487bad8a1d83975 # v1.31.5
     with:
       directory: terraform/governance
       environment: dev
@@ -75,7 +75,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@ed119fa2b4c554074ef189cc6d16696a41a833b6 # v1.31.2
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@7e124ba6227a9efebd37b0fff487bad8a1d83975 # v1.31.5
     with:
       directory: terraform/connectivity
       environment: dev
@@ -90,7 +90,7 @@ jobs:
       id-token: write
       contents: read
       issues: write # terraform-pending and deploy-failed issues
-    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@ed119fa2b4c554074ef189cc6d16696a41a833b6 # v1.31.2
+    uses: jay-withers/workflows/.github/workflows/terraform-deploy.yml@7e124ba6227a9efebd37b0fff487bad8a1d83975 # v1.31.5
     with:
       directory: terraform/landingzones
       environment: dev
